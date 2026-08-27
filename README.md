@@ -89,8 +89,13 @@ fully camera-visible, and excluded.
 
 **Why it bears on dependence estimation.** An object the camera can see and the range sensors
 cannot is the single most informative case for estimating whether two sensing channels fail
-together. The filter removes that cell by construction, so any dependence estimate computed
-through the official pipeline is biased toward independence.
+together. The filter removes that cell by construction, so a dependence estimate computed
+*through the official pipeline* would be biased toward independence.
+
+We tested whether the published estimate is affected. It is not — see Result C, where that
+hypothesis is recorded as rejected. The consequence turns out to be structural rather than
+corrective: the field's benchmark cannot reflect a phenomenon that has already been measured
+elsewhere.
 
 ## Result B (measured): camera and lidar are not scored on the same objects
 

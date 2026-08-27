@@ -73,20 +73,54 @@ That claim would have been demolished on contact.
 | Corrected errors | 3D distance replaced by 2D per `data_classes.py:54-56` (47 of ~53,000 objects, headline unchanged); three corrupted transfers, one caught only by CRC32C |
 | Reiyah repository | **untouched.** Its 1.2.1 work in flight belongs to another workstream |
 
+## 5b. Results B and C, same day
+
+**Result B (measured, analytic).** The removal criterion is defined on range-sensor returns
+alone, so it correlates with lidar failure by construction and not with camera failure. Lidar-only
+recall inflation `N_full / N_eval` is **x1.1042 overall and x1.2461 at 40-50 m**, against x1.0421
+within 20 m. By class: traffic cone x1.1817, bicycle x1.1232, car x1.1221, pedestrian x1.0927,
+bus x1.0112.
+
+The caveat was found by pressure-testing our own claim and is stated in the README rather than
+buried: `num_lidar_pts` counts the **keyframe sweep only**, while production detectors accumulate
+around ten sweeps. So the factor is an **upper bound**, not a point estimate. Direction of the
+bias is assumption-free; magnitude is not.
+
+**Result C (hypothesis rejected).** We expected Qiu's dependence estimate to have inherited the
+filter. It did not. Qiu uses an independent pipeline — front-facing ROI 30 m by 50 m split at
+30 m, Hungarian assignment on GIoU — and the only ground-truth filter described is spatial. The
+terms `num_lidar_pts`, `num_pts`, devkit and zero-point appear nowhere in the dissertation.
+
+The replacement is stronger. Two communities measure on two different denominators and neither
+has noticed: Qiu measured dependence on an uncensored set and found false-negative correlation
+of 0.43 to 0.53, while the benchmark the field optimises against removes a range-sensor-selected
+9.43% of its ground truth. The phenomenon has been measured and the leaderboard cannot see it.
+**Say this in a way that strengthens Qiu's work, because it does.**
+
 ## 6. The next smallest action
 
-Result A is measured and needs no further verification. The next smallest action is to determine
-whether the published dependence literature inherited this same filter:
+Results A, B and C are settled. The open gap is Result B's upper bound, and only a detector can
+close it.
 
-Qiu's 2024 FAU dissertation measured camera-lidar error correlation on nuScenes. If that analysis
-used the official evaluation pipeline, its estimate is biased toward independence, because the
-filter removes the "range sensors saw nothing" cell that is most informative about joint failure.
-Establishing that is a literature question first (read the thesis method section) and an
-empirical one second.
+**Run one camera-only and one lidar-only detector over the validation set twice — with the
+zero-point filter and without it — and report the delta.** That converts the x1.1042 bound into a
+measurement, and it directly answers the question a reviewer will ask first.
 
-State it carefully and generously if true: it strengthens their conclusion rather than
-undermining it. Their finding was that assuming independence overestimates system performance.
-A censored denominator means they understated their own case.
+Stack, already verified: nuScenes is the only dataset where both arms exist as downloadable
+weights. Camera arm PETR, lidar arm BEVFusion-lidar or CenterPoint, **both from MMDetection3D
+v1.4.0** so one environment and one metric path serves both. Torch 2.1 with CUDA 12.1, mmcv 2.1.0
+prebuilt wheel, Python 3.10.
+
+This needs the 370 GB sensor blobs and a GPU. **The host machine has under 3 GB free**, so it
+belongs in GCP, where the metadata already sits in
+`gs://sunlit-unison-487018-b0-sentinel/nuscenes/` and where `gcloud` is authenticated as
+`dev@alfred-ai.app` on project `sunlit-unison-487018-b0`.
+
+The per-object matcher is the one piece that must be written: the devkit's `accumulate()` keeps
+its match set in a local variable named `taken` and discards it on return, so per-object
+true-positive and false-negative outcomes are not exposed. Re-implement it keeping `taken`, then
+validate by re-aggregating your per-object table back to the official mAP and NDS. **Do not skip
+that validation step** — it is the only proof the matcher is the official one.
 
 ## 7. Then, in order
 
