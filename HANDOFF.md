@@ -111,10 +111,34 @@ weights. Camera arm PETR, lidar arm BEVFusion-lidar or CenterPoint, **both from 
 v1.4.0** so one environment and one metric path serves both. Torch 2.1 with CUDA 12.1, mmcv 2.1.0
 prebuilt wheel, Python 3.10.
 
-This needs the 370 GB sensor blobs and a GPU. **The host machine has under 3 GB free**, so it
-belongs in GCP, where the metadata already sits in
-`gs://sunlit-unison-487018-b0-sentinel/nuscenes/` and where `gcloud` is authenticated as
-`dev@alfred-ai.app` on project `sunlit-unison-487018-b0`.
+### The compute is already built — do not rebuild it
+
+`gcloud` is authenticated as `dev@alfred-ai.app` on project `sunlit-unison-487018-b0`.
+
+| Resource | State |
+|---|---|
+| `sentinel-gpu`, zone `us-west1-a` | `g2-standard-8`, **NVIDIA L4 24 GB**, driver 580, currently TERMINATED |
+| `sentinel-nuscenes-data-1tb` | 1 TB disk, attached, mounted `/datasets/nuscenes-full` |
+| Dataset on that disk | **complete trainval**: `samples` 53 GB, `sweeps` 342 GB, `v1.0-trainval` metadata 2.5 GB, `maps`, plus 294 GB of original archives |
+
+Start with `gcloud compute instances start sentinel-gpu --zone us-west1-a`, reach it with
+`gcloud compute ssh sentinel-gpu --zone us-west1-a --tunnel-through-iap`. Roughly $0.85-1.00/hour
+while running, near zero while stopped. **Stop it when not actively computing.**
+
+### The one real obstacle, and how to get round it
+
+The box carries **torch 2.9.1 + CUDA 12.9**. mmcv 2.1.0, which MMDetection3D v1.4.0 requires, has
+prebuilt wheels only up to cu121/torch2.1.0. So a native install means either downgrading torch —
+which would disturb the Sentinel stack that owns this machine — or building mmcv from source
+against cu129, which is the multi-week failure mode. Root has only 30 GB free, which is tight for
+a second environment plus weights.
+
+**Use a container.** containerd is present at `/opt/containerd`. A pinned image carrying
+torch 2.1 + cu121 + mmcv 2.1.0 + mmdet3d v1.4.0 isolates the toolchain completely, leaves
+Sentinel's environment untouched, and makes the run reproducible by digest — which this program
+should want anyway. Mount `/datasets/nuscenes-full` read-only into it.
+
+Do not install mmcv into the host Python. That machine belongs to another mission.
 
 The per-object matcher is the one piece that must be written: the devkit's `accumulate()` keeps
 its match set in a local variable named `taken` and discards it on return, so per-object
