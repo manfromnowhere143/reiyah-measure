@@ -1,50 +1,72 @@
 # reiyah-measure
 
-An evidence-producing measurement engine for the Reiyah research program.
+Perception benchmarks report a scalar. That scalar is computed from a per-object outcome matrix
+which every devkit builds and then discards. This repository rebuilds the matrix and asks it
+questions the scalar cannot answer.
 
-This repository is **deliberately separate from Reiyah**. Reiyah's Gate A control GA-15 requires
-that its architecture contain no product runtime and no live inference. Model execution and
-dataset analysis therefore cannot live inside the Reiyah packet without invalidating it. This
-repository produces evidence artifacts; Reiyah may later admit them through its source ledger,
-under its own rules, as it would admit any third-party evidence. Nothing here has Reiyah
-authority.
+The first question was whether the denominator is honest. It is not: the official nuScenes
+evaluation removes 9.43% of its validation ground truth before scoring anything. The second was
+whether two sensing channels fail independently, which is the assumption underwriting every
+multi-sensor safety argument. They do not.
+
+This repository is deliberately separate from [Reiyah](https://github.com/manfromnowhere143/reiyah).
+Reiyah's Gate A control GA-15 requires that its architecture contain no live inference, so dataset
+analysis cannot live there without invalidating the packet. Reiyah may later admit these artifacts
+through its source ledger as it would any third-party evidence. **Nothing here carries Reiyah
+authority.**
 
 ## Status
 
 | Field | Value |
 |---|---|
 | Lifecycle status | `proposed` |
-| Result A | **measured** — all ten audits passed on a checksum-verified copy |
-| Result B | **measured** — analytic, derived from the same audited object set |
+| Result A | **measured** — 9.43% of val GT removed before scoring; ten audits passed |
+| Result B | **measured** — the removal is a range-sensor criterion; inflation quantified |
 | Result C | **hypothesis rejected** — the published estimate does not inherit the filter |
-| Result D | **measured, superseded** — marginal c 1.24 to 2.37 |
-| Result E | **measured** — conditional c = **1.16**; 73% of D was shared difficulty |
+| Result D | **measured, superseded** — marginal lift 1.24 to 2.37 |
+| Result E | **measured** — 73% of D is shared difficulty; conditional c = 1.16 |
 | Result F | **measured** — B's bound closed: lidar recovers 18.13% of removed objects |
 | Result G | **derived** — the real cost is **+26% evidence**; N scales as sqrt(c) |
-| Corrections | six claims withdrawn or corrected; all left standing with refutations |
-| Reiyah Gate B | not authorized; not required for the work in this repository |
+| Result H | **measured** — modality diversity cuts joint-failure odds by **60%** |
+| Corrections | **six claims withdrawn or corrected**, all left standing with refutations |
+| Reiyah Gate B | not authorized; not required for anything here |
 | Operator acceptance | none |
 | Claims created | none |
 
-No finding in this repository may be described as a result until its audit passes. A computed
-number is not a measurement. Result A has now passed; the audit transcript is retained at
-[`results/audit_result_a.txt`](results/audit_result_a.txt).
+A computed number is not a measurement. Nothing here is called a result until its audit passes.
 
-## What this is for
+## The chain
 
-Reiyah asks whether a versioned human-automation system can support independently falsifiable
-analysis of object-level belief, readiness, recoverability, joint silent misses, causal policy
-effects, transfer, and worst-group behaviour. Answering any of that requires counting things
-correctly, on a denominator that is stated rather than assumed.
+```mermaid
+flowchart TB
+  subgraph OFFICIAL["What the official protocol does"]
+    GT["187,528 annotated objects<br/>val split, 10 evaluated classes"]
+    DF["class-range distance filter<br/>loaders.py:226-227"]
+    PF["zero-point filter<br/>loaders.py:231<br/>num_lidar_pts + num_radar_pts == 0"]
+    EV["121,871 objects scored"]
+    MAP["mAP — a scalar<br/>per-object identities discarded"]
+    GT --> DF --> PF --> EV --> MAP
+  end
 
-This repository is where the counting happens.
+  subgraph OURS["What this repository does"]
+    FULL["134,565 objects<br/>distance filter only"]
+    M["per-object matcher<br/>devkit accumulate() with the<br/>match set retained"]
+    V{"reproduces<br/>published mAP?"}
+    MATRIX["per-object outcome matrix<br/>3 detectors x 134,565 objects"]
+    FULL --> M --> V
+    V -->|"lidar 51.97 vs 51.90<br/>camera 29.58 vs 29.80<br/>lidar-2 29.54 vs 29.50"| MATRIX
+    V -->|no| STOP["withdraw, do not weaken"]
+  end
 
-## Result A (measured)
+  DF -.->|"12,694 objects removed here<br/>9.43%, Result A"| FULL
+  MATRIX --> RA["Result A/B/F<br/>what the denominator hides"]
+  MATRIX --> RD["Result D/E/G<br/>the RSS coefficient c"]
+  MATRIX --> RH["Result H<br/>what modality diversity buys"]
+```
 
-**Question.** The official nuScenes 3D detection evaluation removes ground-truth objects before
-any detector is scored. How many, and which ones?
+## Result A — the denominator (measured)
 
-**The mechanism.** In `nuscenes-devkit`, `python-sdk/nuscenes/eval/common/loaders.py`:
+In `nuscenes-devkit`, `python-sdk/nuscenes/eval/common/loaders.py`:
 
 ```python
 # line 231
@@ -52,407 +74,241 @@ eval_boxes.boxes[sample_token] = [box for box in eval_boxes[sample_token]
                                   if not box.num_pts == 0]
 ```
 
-and at line 137, `num_pts = num_lidar_pts + num_radar_pts`. Every annotated object that returned
-no lidar points and no radar points is deleted from the ground truth. This applies to every
-detector evaluated on nuScenes, including camera-only detectors, for which some of those objects
-are precisely the ones only they could have found.
+and at line 137, `num_pts = num_lidar_pts + num_radar_pts`. Every annotated object returning no
+lidar and no radar points is deleted from the ground truth before any detector is scored.
 
-`filter_eval_boxes` applies its filters in order: the class-range distance filter first
-(lines 226-227), then this point filter (line 231), then bike-rack filtering (line 234+). The
-honest denominator for this question is therefore *boxes surviving the distance filter*.
-
-**Measured figures.** nuScenes v1.0-trainval, official 150-scene validation split, ten evaluated
-detection classes:
+`filter_eval_boxes` applies distance first (226-227), then this (231), then bike-rack filtering
+(234+). The honest denominator is therefore boxes surviving the distance filter.
 
 | Quantity | Value |
 |---|---|
-| Val annotations in evaluated classes | 187,528 |
+| Val annotations in the 10 evaluated classes | 187,528 |
 | Removed first by the distance filter | 52,963 |
-| Surviving distance filter (denominator) | 134,565 |
+| Surviving distance filter | 134,565 |
 | **Removed by the zero-point filter** | **12,694 (9.43%)** |
-| ...of those, annotated 80-100% visible in cameras | 2,207 |
+| Of those, annotated 80-100% camera-visible | 2,207 |
 
-Gradients matter more than the headline:
+The gradients matter more than the headline. Removal runs at 4.04% within 20 m and 19.75% at
+40-50 m; at 27.02% for objects annotated 0-40% camera-visible and 3.15% at 80-100%. By class:
+traffic cone 15.38%, bicycle 10.97%, car 10.89%, bus 1.10%.
 
-| Ego distance | % removed | | Camera visibility | % removed |
+A zero point count means no range-sensor return fell inside the box that keyframe, which for a
+distant or occluded object is expected physics rather than detector failure. The finding is not
+that these objects are easy. It is that roughly one annotated object in eleven is silently absent
+from every published nuScenes number, with a five-fold gradient in range.
+
+**Audit.** Ten adversarial checks, all passing, transcript in
+[`results/audit_result_a.txt`](results/audit_result_a.txt). The decisive one reproduces nuScenes'
+published validation count of **6,019 samples exactly** — external validation of the join, not
+internal consistency. Two independent recounts match to the object.
+
+**Independent replication.** Re-derived on a separately obtained copy of nuScenes (file timestamps
+March 2019), on different hardware, with code rewritten for the extracted directory layout. Every
+figure identical: 134,565 / 12,694 / 9.43% / 2,207, and all four range-band inflations. Three axes
+vary at once, so agreement is not shared-implementation agreement.
+([`results/replication_independent_copy.txt`](results/replication_independent_copy.txt))
+
+## Result B — the removal is a range-sensor criterion (measured)
+
+The criterion is defined on range-sensor returns and nothing else, so it correlates with lidar
+failure by construction and not with camera failure. Expressing a lidar-only detector's recall over
+the complete in-range set rather than the filtered one:
+
+| Stratum | N_full | N_eval | Removed | Inflation |
 |---|---|---|---|---|
-| 0-20 m | 4.04% | | v0-40 | 27.02% |
-| 20-30 m | 9.99% | | v40-60 | 7.10% |
-| 30-40 m | 13.80% | | v60-80 | 4.47% |
-| 40-50 m | 19.75% | | v80-100 | 3.15% |
+| **All** | 134,565 | 121,871 | 12,694 | **x1.1042** |
+| 0-20 m | 54,626 | 52,418 | 2,208 | x1.0421 |
+| 20-30 m | 38,242 | 34,420 | 3,822 | x1.1110 |
+| 30-40 m | 26,385 | 22,745 | 3,640 | x1.1600 |
+| **40-50 m** | 15,312 | 12,288 | 3,024 | **x1.2461** |
 
-By class, the most affected are traffic cones (15.38%), bicycles (10.97%) and cars (10.89%);
-the least affected is bus (1.10%).
+Stated as an upper bound at the time, conditional on zero keyframe returns implying non-detection.
+**Result F closed that bound and the assumption was too strong** — see below.
 
-**What this does and does not mean.** A zero point count means no lidar or radar return fell
-inside the annotated box in that keyframe, which for a distant or heavily occluded object is
-expected physics rather than detector failure. The finding is not that the objects are easy. It
-is that the evaluation denominator silently excludes roughly one annotated object in eleven,
-with a five-fold gradient in range, and that this is invisible in every published nuScenes
-number. The 2,207 objects annotated as 80-100% visible in the cameras are the cleanest case:
-fully camera-visible, and excluded.
+## Result C — a hypothesis of ours, rejected
 
-**Why it bears on dependence estimation — and where we were wrong.** An object the camera can see
-and the range sensors cannot is the most informative single case for estimating whether two
-channels fail together, and the filter removes that cell by construction. We reasoned from that
-to a claim: a dependence estimate computed through the official pipeline would be biased *toward*
-independence.
+We expected Qiu's 2024 FAU dissertation, which measured camera-lidar error correlation on
+nuScenes, to have inherited this filter. It did not. Qiu builds an independent pipeline: a
+front-facing ROI of 30 m by 50 m split at 30 m, with Hungarian assignment on GIoU. The only
+ground-truth filter described is spatial — *"Ps and GTs are filtered by the ROI"* — and the terms
+`num_lidar_pts`, `num_pts`, devkit and zero-point appear nowhere in the document.
 
-**Measurement contradicted it.** Result D computes the coefficient on both denominators and finds
-1.630 filtered against 1.587 unfiltered — the censoring inflates dependence by about 3%, it does
-not deflate it. Adding the removed objects raises the lidar marginal faster than it raises the
-joint, so the lift falls. The claim is withdrawn, and it is left standing here with its
-refutation attached rather than edited out.
+What replaced it is sharper. **Two communities measure on two different denominators and neither
+has noticed.** Qiu measured dependence on an uncensored set and found false-negative correlation
+of 0.43 to 0.53. The benchmark the field optimises against removes a range-sensor-selected 9.43%.
+The phenomenon has been measured; the leaderboard cannot reflect it. That strengthens Qiu's work
+rather than undermining it.
 
-Separately, Result C establishes that the published dependence estimate does not run through this
-pipeline at all, so no correction to it was ever available.
+## Results D, E and G — the RSS coefficient
 
-## Result B (measured): camera and lidar are not scored on the same objects
-
-Result A says 9.43% of the ground truth is removed. The obvious next question is how much that
-moves anything. It can be answered without running a detector.
-
-The removal criterion is `num_lidar_pts + num_radar_pts == 0`. It is defined on range-sensor
-returns and nothing else. So it is correlated with lidar failure **by construction**, and
-uncorrelated with camera failure. The benchmark deletes objects the range sensors could not see,
-regardless of what the cameras saw. 2,207 of the deleted objects are annotated 80-100%
-camera-visible.
-
-Expressing a lidar-only detector's recall over the complete in-range annotated set instead of the
-filtered one gives an inflation factor of `N_full / N_eval`:
-
-| Stratum | N_full | N_eval | Removed | Inflation | Camera-visible |
-|---|---|---|---|---|---|
-| **All** | 134,565 | 121,871 | 12,694 | **x1.1042** | 2,207 |
-| 0-20 m | 54,626 | 52,418 | 2,208 | x1.0421 | 482 |
-| 20-30 m | 38,242 | 34,420 | 3,822 | x1.1110 | 856 |
-| 30-40 m | 26,385 | 22,745 | 3,640 | x1.1600 | 373 |
-| **40-50 m** | 15,312 | 12,288 | 3,024 | **x1.2461** | 496 |
-
-By class, worst first: traffic cone x1.1817, bicycle x1.1232, car x1.1221, pedestrian x1.0927.
-Least affected: bus x1.0112.
-
-The gradient is the finding. Near the vehicle the effect is 4%. At 40-50 metres it is 25% — and
-long range is exactly where the camera-versus-lidar argument lives.
-
-### The assumption, and its limit
-
-`num_lidar_pts` counts returns inside the box in the **keyframe sweep only**. Most production
-lidar detectors accumulate around ten sweeps, so an object with zero keyframe points may still
-carry evidence in the accumulated stack. More so if it moved into view; less so if it is
-statically occluded, since adjacent sweeps then share nearly the same geometry.
-
-So "undetectable" is too strong, and the inflation factor is an **upper bound**: it is the
-correction if zero keyframe returns implies non-detection. The true correction lies between 1.0
-and the figure shown.
-
-**Result F closes that gap empirically.** Using the published lidar-only detections, at score
->= 0.3 the detector recovers **18.13%** of the objects the filter removes. So the assumption of
-0% was wrong, multi-sweep accumulation does rescue about a fifth of them, and the true correction
-is roughly 82% of the stated bound — **x1.085 rather than x1.104** overall.
-
-The assumption was directionally right and quantitatively too strong. Zero-point objects are
-detected by the lidar arm at 18.13% against 71.00% for everything else: four times harder, not
-impossible.
-
-| Score | lidar finds zero-point | lidar finds others | camera finds zero-point | camera finds others |
-|---|---|---|---|---|
-| >= 0.1 | 49.27% | 90.44% | 29.68% | 72.69% |
-| >= 0.3 | 18.13% | 71.00% | 12.29% | 57.88% |
-| >= 0.5 | 4.45% | 43.90% | 2.38% | 34.40% |
-
-**And this tempers Result A's framing too.** The camera arm finds only 12.29% of the removed
-objects against 57.88% of the rest. These are objects that are hard for *everyone*, not a cache of
-camera-visible detections being thrown away. The 2,207 annotated at 80-100% camera visibility
-remain the cleanest subset of the claim, but "the objects only a camera could have found" was
-too strong a gloss on the whole 12,694.
-
-What does not depend on the assumption is the direction. The removal criterion is a range-sensor
-criterion. Whatever its exact magnitude, the bias runs one way, and it grows with distance.
-
-This is not a claim that any published number is wrong. It is a claim that camera-only and
-lidar-only methods are not being scored against the same set of objects, and that the difference
-is largest where it matters most.
-
-## Result C: a hypothesis of ours, killed — and what replaced it
-
-We expected the published dependence literature to have inherited this filter. If Qiu's 2024 FAU
-dissertation, which measured camera-lidar error correlation on nuScenes, had run through the
-official evaluation pipeline, its estimate would be biased toward independence and we could
-report a correction.
-
-**It did not, and the hypothesis is dead.** Qiu builds an independent pipeline: a front-facing
-region of interest of 30 m lateral by 50 m longitudinal, split at 30 m, with Hungarian assignment
-between perception results and ground truths on GIoU. The dissertation describes exactly one
-ground-truth filter — *"Ps and GTs are filtered by the ROI"* — and the terms `num_lidar_pts`,
-`num_pts`, devkit, and zero-point appear nowhere in the document. Absence in the text is not
-proof of absence in the code, but the described method contains no point-count filter.
-
-What replaced the hypothesis is more interesting than the hypothesis was.
-
-**Two communities are measuring on two different denominators, and neither has noticed.** Qiu
-measured camera-lidar failure dependence on an *uncensored* ground-truth set and found
-correlation of 0.43 to 0.53 for false negatives. The detection benchmark that the entire field
-optimizes against removes 9.43% of its ground truth, selected by a range-sensor criterion —
-which is to say, it removes a biased sample of exactly the objects where lidar fails and the
-correlation Qiu measured would show up.
-
-So the phenomenon has been measured, and the leaderboard is structurally incapable of reflecting
-it. That is not a correction to Qiu. It is a reason their result has been ignorable: the numbers
-the field actually competes on cannot see what they found.
-
-This strengthens their work rather than undermining it, and we will say so in those words.
-
-## Result D (measured): the RSS coefficient, and a correction to Result A
-
-RSS Definition 32 calls two subsystem error events *one side c-approximate independent* when
+RSS ([Shalev-Shwartz, Shammah, Shashua, arXiv:1708.06374](https://arxiv.org/abs/1708.06374))
+Definition 32 calls two subsystem errors *one side c-approximate independent* when
 `P[r1 AND r2] <= c * P[r1] * P[r2]`, and Corollary 3 uses that to cut required validation evidence
-from roughly 10⁹ examples to 10⁵. The coefficient is never estimated in that paper. The smallest
-value consistent with an observed pair is the lift, `c = P[both miss] / (P[cam miss] * P[lid miss])`.
+from roughly 10⁹ examples to 10⁵. **The coefficient is never estimated in that paper.**
 
-We measured it, on the official camera-only and lidar-only detection results nuScenes publishes
-itself: **Mapillary MonoDIS** (29.8 mAP, camera) against **Megvii CBGS** (51.9 mAP, lidar), same
-val split, same format.
+We measured it on the camera-only and lidar-only detection results nuScenes publishes itself.
 
-| Operating point | N | cam miss | lid miss | joint observed | joint if independent | **c** |
-|---|---|---|---|---|---|---|
-| score >= 0.1 | 134,565 | 0.3137 | 0.1344 | 0.0958 | 0.0422 | **2.271** |
-| score >= 0.2 | 134,565 | 0.3945 | 0.2196 | 0.1627 | 0.0866 | **1.878** |
-| score >= 0.3 | 134,565 | 0.4643 | 0.3399 | 0.2505 | 0.1578 | **1.587** |
-| score >= 0.4 | 134,565 | 0.5590 | 0.4887 | 0.3724 | 0.2731 | **1.363** |
-| score >= 0.5 | 134,565 | 0.6862 | 0.5982 | 0.5085 | 0.4105 | **1.239** |
+**Marginal lift**, full denominator, by operating point: 2.271 at score ≥ 0.1, 1.878 at 0.2,
+**1.587 at 0.3**, 1.363 at 0.4, 1.239 at 0.5.
 
-**These are MARGINAL figures and Result E supersedes them as the headline.** Conditioning on
-observable scene difficulty removes 73% of this excess, leaving c = 1.16. The table below is
-retained because it is the input to that correction, not because 1.587 is the answer.
+**Conditional lift** (Result E), stratified on class × range × visibility at score ≥ 0.3:
 
-Read against Corollary 3: for this detector pair, the reduction in required validation evidence
-is overstated by a factor of roughly **1.2 to 2.3**, depending on where you set the threshold.
-
-By class at score >= 0.3, worst first: car 1.994, bus 1.609, barrier 1.579, traffic cone 1.444,
-pedestrian 1.361, motorcycle 1.301, truck 1.274, bicycle 1.259, construction vehicle 1.080,
-trailer 1.033.
-
-### Two things we got wrong, stated plainly
-
-**One: the direction of the censoring bias.** Result A closed by reasoning that a dependence
-estimate computed on the filtered denominator would be biased *toward* independence. Measurement
-says otherwise. At score >= 0.3 the official denominator gives c = 1.630 and the full denominator
-gives c = 1.587. The censoring inflates the coefficient by about 3%, it does not deflate it.
-Adding the removed objects raises the lidar marginal faster than it raises the joint, so the lift
-falls. **That claim is withdrawn.** The measured effect is small and runs the other way.
-
-**Two: where dependence is worst.** Result B's narrative assumed the interesting effects live at
-long range. For the coefficient they do not. At score >= 0.3, c falls from 1.970 within 20 m to
-1.173 at 40-50 m — because at long range both channels miss so often that the product of the
-marginals approaches the joint. Result B's *inflation* gradient is real and does grow with
-distance; the *dependence* gradient runs the opposite way. Two different quantities, and we
-conflated their narratives.
-
-### What survives
-
-The measurement itself, which is the point. RSS's coefficient has a value, it is not 1, and it is
-not close to 1 at any operating point a deployed system would use.
-
-## Result E (measured): most of Result D was shared difficulty. Some of it was not.
-
-The obvious attack on Result D: range, occlusion and object size make an object hard for **both**
-channels at once, so two detectors failing on the same hard objects produce marginal association
-with no interesting common cause. We ran that test against ourselves rather than waiting for a
-reviewer to run it.
-
-Stratifying on class x range band x annotated camera visibility, at score >= 0.3, full denominator:
-
-| Estimate | Value |
+| | |
 |---|---|
-| Unstratified lift (Result D) | 1.587 |
-| **Conditioned on class, range and visibility** | **1.156** |
-| Share of the excess explained by difficulty | **73.4%** |
-| Residual excess over independence | 15.6% |
-| Mantel-Haenszel common odds ratio | 2.810 |
+| Marginal | 1.587 |
+| **Conditional on difficulty** | **1.156** |
+| Explained by shared difficulty | **73.4%** |
+| Mantel-Haenszel odds ratio | 2.810 |
 | CMH chi-square, 1 df | **4,924** |
 
-**Three quarters of the dependence was shared difficulty. The remaining quarter is not, and it is
-not close to noise.** A CMH statistic of 4,924 on one degree of freedom rejects conditional
-independence by any margin anyone would care about; the threshold for p < 0.001 is 10.83.
+Three quarters of the association is shared difficulty. The rest is not, and it is nowhere near
+noise — the threshold for p < 0.001 is 10.83. The decay is what a real effect looks like: 1.525 by
+class, 1.318 adding range, 1.156 adding visibility, approaching 1 and stopping above it.
 
-The pattern holds as strata get finer, which is what a real effect looks like — the lift decays
-toward 1 as more difficulty is absorbed, but stops above it:
+**What it costs** (Result G). Both prior results had the number right and the use wrong.
 
-| Stratification | strata | c at 0.3 | MH OR | CMH |
-|---|---|---|---|---|
-| class only | 10 | 1.525 | 5.795 | 19,607 |
-| class x range | 33 | 1.318 | 4.281 | 11,912 |
-| class x range x visibility | 132 | **1.156** | 2.810 | 4,924 |
-
-Only 88 objects of 134,565 fall in strata below the 30-object minimum; they are reported rather
-than silently dropped.
-
-### The corrected headline
-
-**Result D's 1.587 is the marginal figure; 1.156 is the conditional one. Both are correct, for
-different questions** — and Result G shows we then misused both. Corollary 3 consumes the
-*marginal* lift, because a deployed system cannot condition on range. The conditional lift answers
-the mechanism question instead: how much of the association survives shared observable difficulty.
-
-That is a smaller claim than the one we published two commits ago. It is also the one that
-survives the first question a reviewer will ask.
-
-### What could still take it to 1
-
-Honestly: unobserved difficulty. We conditioned on class, range and annotated camera visibility.
-We did not condition on object size, truncation at image boundaries, motion state, or lidar return
-count, and any of those could absorb more of the residual. The lift decayed from 1.53 to 1.32 to
-1.16 as we added covariates, and the sequence has not obviously converged.
-
-So the correct statement is bounded on both sides: **the coefficient is at most 1.16 and at least
-1**, conditional dependence is rejected on the covariates we have, and further stratification will
-push the estimate down. Whether it reaches 1 is open, and we will say so until it is settled.
-
-The two estimators disagree in magnitude by design and both are reported: the lift is the quantity
-RSS Definition 32 is written in, while the Mantel-Haenszel odds ratio is the standard tool for
-conditional association and is far less attenuated when marginals are large.
-
-## Result G (derived): what the dependence actually costs, and two more of our errors
-
-Results D and E both got the *number* right and the *use* wrong. Fixing that changes the
-conclusion, and makes it smaller.
-
-**Error one: which coefficient Corollary 3 consumes.** Result E concluded "quote 1.16, not 1.59."
-That is wrong here. Corollary 3 bounds the system-level probability of a safety-critical mistake
-integrated over the operating distribution. A deployed vehicle does not condition on range;
-objects arrive at whatever range they arrive at. **The marginal lift is the operationally correct
-input.** The conditional lift remains a real finding about mechanism — 73% of the excess is shared
-difficulty — but it is not what the bound takes.
-
-**Error two, and the larger one: evidence does not scale linearly in c.** Saying "c = 1.587, so
-the shortcut is overstated by 59%" assumes it does. From the bound itself:
+Corollary 3 bounds the system-level probability integrated over the operating distribution, and a
+deployed vehicle cannot condition on range — so the **marginal** lift is the operationally correct
+input, not the conditional one. And evidence does not scale linearly in c:
 
 ```
-P  <=  6 c p²        ->        p = sqrt( P / 6c )        ->        N ~ 1/p = sqrt( 6c / P )
+P <= 6 c p²    ->    p = sqrt(P / 6c)    ->    N ~ 1/p = sqrt(6c / P)
 ```
 
-**Required evidence scales as the square root of the lift.** Our reading of Corollary 3 checks out
-against the paper's own worked example: at target `P = 1e-9` with `c = 1`, this gives 77,460
-examples per subsystem, and RSS says "order of 10⁵".
+Required evidence scales as **the square root of the lift**. Our reading checks against the paper's
+own worked example: at target 10⁻⁹ with c = 1 this gives 77,460 examples per subsystem, and RSS
+says "order of 10⁵".
 
-| Score | marginal c | examples per subsystem | vs independence | **extra evidence** |
+| Score | marginal c | examples per subsystem | **extra evidence** |
+|---|---|---|---|
+| ≥ 0.1 | 2.271 | 116,730 | **50.7%** |
+| ≥ 0.3 | 1.587 | 97,581 | **26.0%** |
+| ≥ 0.5 | 1.239 | 86,221 | **11.3%** |
+
+**Corollary 3 is not destroyed by the measured dependence. It is understated by about a quarter.**
+Whether a quarter matters is an engineering judgement and we do not make it for anyone.
+
+## Result F — closing Result B's bound (measured)
+
+Result B assumed zero keyframe lidar return implies non-detection. The published detections test
+it directly. At score ≥ 0.3 the lidar arm **recovers 18.13%** of the removed objects, against
+71.00% of everything else.
+
+| Score | lidar finds removed | lidar finds others | camera finds removed | camera finds others |
 |---|---|---|---|---|
-| >= 0.1 | 2.271 | 116,730 | 1.507x | **50.7%** |
-| >= 0.2 | 1.878 | 106,151 | 1.370x | **37.0%** |
-| >= 0.3 | 1.587 | 97,581 | 1.260x | **26.0%** |
-| >= 0.4 | 1.363 | 90,432 | 1.167x | **16.7%** |
-| >= 0.5 | 1.239 | 86,221 | 1.113x | **11.3%** |
+| ≥ 0.1 | 49.27% | 90.44% | 29.68% | 72.69% |
+| ≥ 0.3 | 18.13% | 71.00% | 12.29% | 57.88% |
+| ≥ 0.5 | 4.45% | 43.90% | 2.38% | 34.40% |
 
-### The honest conclusion
+Multi-sweep accumulation rescues about a fifth. The assumption was directionally right and
+quantitatively too strong, so the true correction is roughly 82% of the stated bound — **×1.085,
+not ×1.104**.
 
-At a representative operating point, **Corollary 3's shortcut understates required evidence by
-about a quarter** — roughly 97,600 examples per subsystem rather than 77,500.
+This also tempers Result A. The camera arm finds only 12.29% of the removed objects against 57.88%
+of the rest: these are hard for *everyone*, not a cache of camera-visible detections being
+discarded. The 2,207 annotated at 80-100% visibility remain the cleanest subset of that claim.
 
-That is a materially smaller claim than "overstated by 59%", and materially smaller again than the
-2.3x we led with three results ago. **Corollary 3 is not destroyed by the measured dependence. It
-is understated by about 26%.**
+## Result H — what modality diversity actually buys (measured)
 
-Whether 26% matters is an engineering judgement rather than a statistical one, and we will not
-make it for anyone. What we will say is that the coefficient RSS leaves unestimated has a value,
-that value is not 1, and the correction it implies is a quarter more validation evidence rather
-than the four orders of magnitude the assumption was buying.
+Every multi-sensor safety argument rests on the premise that a second modality fails differently
+from the first. It is measurable, with three published detectors on one split.
 
-### Caveats that belong on the number
+The design holds Megvii fixed and varies only the partner's modality, at nearly identical partner
+accuracy — which separates a modality effect from an accuracy effect.
 
-The matcher reproduces published mAP to within 0.07 (lidar) and 0.22 (camera), so the underlying
-per-object outcomes are sound. But: these are two specific detectors, one of them a 2019
-monocular model at 29.8 mAP; "miss" requires choosing a score threshold and the two detectors'
-confidences are not mutually calibrated, which is why the table sweeps the operating point rather
-than picking one; and dependence here is *marginal*, not conditional on scene difficulty. Range,
-occlusion and object size drive both channels and inflate any marginal association. A
-Cochran-Mantel-Haenszel treatment stratified on those covariates is the next refinement, and it
-will lower these numbers. It is unlikely to take them to 1.
+| Pair | Modalities | marginal c | conditional c | **MH odds ratio** |
+|---|---|---|---|---|
+| Megvii × PointPillars | **lidar / lidar** | 1.712 | 1.313 | **7.010** |
+| Megvii × Mapillary | camera / lidar | 1.587 | 1.156 | **2.810** |
+| PointPillars × Mapillary | camera / lidar | 1.393 | 1.101 | 2.193 |
 
-## Independent replication
+**Swapping a same-modality partner for a cross-modality one at matched accuracy cuts the
+conditional joint-failure odds ratio by 60%**, from 7.010 to 2.810.
 
-Results A and B were re-derived on a second copy of nuScenes obtained separately and years
-earlier (file timestamps of March 2019), on different hardware, using code rewritten from scratch
-for the extracted directory layout rather than the streamed tarball.
+Two things follow, and they point in opposite directions. Modality diversity buys a great deal of
+independence, which is a quantitative vindication of multi-modal design. And it does not buy all of
+it: cross-modality conditional c stays at 1.10 to 1.16 with odds ratios near 2.2 to 2.8, so the
+independence assumption still fails after diversification.
 
-Every figure matches to the object:
+## Method
 
-| Quantity | macOS, GCS tarball | Linux/L4, disk copy |
+The matcher reimplements the devkit's `accumulate()` — greedy, confidence-sorted, per-class, 2D
+centre distance, a claimed ground truth cannot be reclaimed — but retains the `taken` set the
+devkit discards on return.
+
+**It is validated by reproducing the official metric on all three detectors:**
+
+| Detector | Modality | Reconstructed mAP | Published | Delta |
+|---|---|---|---|---|
+| Megvii CBGS | lidar | 51.97 | 51.90 | 0.07 |
+| Mapillary MonoDIS | camera | 29.58 | 29.80 | 0.22 |
+| PointPillars | lidar | 29.54 | 29.50 | 0.04 |
+
+That validation caught two real bugs. The devkit interpolates precision with linear `np.interp`,
+not a step lookup. And `filter_eval_boxes` distance-filters the **predictions** as well as the
+ground truth — omitting that turns out-of-range detections into false positives the official
+protocol never sees, and cost 3.3 mAP.
+
+## Corrections
+
+Every claim below was published here and then withdrawn on evidence. All remain in place with
+their refutations attached. A repository arguing that denominators must be stated does not get to
+quietly delete its own errors.
+
+| Claim | Verdict | Replaced by |
 |---|---|---|
-| Surviving distance filter | 134,565 | 134,565 |
-| Removed by point filter | 12,694 (9.43%) | 12,694 (9.43%) |
-| Of those, v80-100 visible | 2,207 | 2,207 |
-| Inflation 0-20 m | x1.0421 | x1.0421 |
-| Inflation 20-30 m | x1.1110 | x1.1110 |
-| Inflation 30-40 m | x1.1600 | x1.1600 |
-| Inflation 40-50 m | x1.2461 | x1.2461 |
+| Censoring biases dependence toward independence | **false**, it inflates ~3% | Result D |
+| Dependence is worst at long range | **false**, worst up close | Result D |
+| The published estimate inherits the filter | **false**, independent pipeline | Result C |
+| Zero lidar points implies undetectable | **false**, 18.13% recovered | Result F |
+| Quote the conditional coefficient against RSS | **wrong quantity** for that bound | Result G |
+| Evidence scales linearly in c | **false**, it scales as sqrt(c) | Result G |
 
-Three axes vary at once: the data copy, the machine, and the code path. Transcript at
-[`results/replication_independent_copy.txt`](results/replication_independent_copy.txt); the
-second implementation is [`tools/replicate_on_disk.py`](tools/replicate_on_disk.py).
+Every correction made the claim smaller.
+
+## Reproducing
+
+```sh
+python3 tools/fetch_predictions.py predictions          # ~250 MB via HTTP range requests
+gsutil cat gs://<bucket>/nuscenes/v1.0-trainval_meta.tgz | python3 tools/build_gt_cache.py gt_val_cache.json
+python3 tools/match.py gt_val_cache.json predictions/megvii_val.json matched_megvii.json --validate 51.9
+python3 tools/result_d.py gt_val_cache.json matched_mapillary.json matched_megvii.json
+python3 tools/result_e.py gt_val_cache.json matched_mapillary.json matched_megvii.json
+python3 tools/result_h.py gt_val_cache.json mapillary=... megvii=... pointpillars=...
+```
+
+No GPU. No sensor blobs. Prefer `gsutil cp` over a pipe on an unreliable connection: it verifies
+CRC32C and will delete a corrupted transfer, which caught one silent corruption here that a pipe
+would have carried straight into the analysis.
 
 ## Provenance
 
 | Item | Value |
 |---|---|
-| Dataset | nuScenes v1.0-trainval metadata (`v1.0-trainval_meta.tgz`) |
-| Official source | `https://motional-nuscenes.s3.amazonaws.com/public/v1.0/v1.0-trainval_meta.tgz` |
-| Byte size | 461,678,030 |
+| Metadata | nuScenes `v1.0-trainval_meta.tgz`, 461,678,030 bytes |
 | SHA-256 of analysed bytes | `db48746b10e3544d5ef619eaa3d687e3960626fe1b4422ed856711da5aa7325b` |
-| Transport used | `gs://sunlit-unison-487018-b0-sentinel/nuscenes/` (mirror) |
-| Mirror verification | exact size match, plus five 512 KiB ranges at offsets 0, 104857600, 230000000, 400000000 and 461155630 confirmed byte-identical to the official source |
+| Official source | `https://motional-nuscenes.s3.amazonaws.com/public/v1.0/` |
+| Mirror verification | exact size plus five 512 KiB ranges byte-identical to the official source |
+| Detections | nuScenes-hosted baselines, `detection-{megvii,mapillary,pointpillars}.zip` |
 | Licence | CC BY-NC-SA 4.0, non-commercial research use |
-| Devkit reference | `nuscenes-devkit` master, `loaders.py:137,231`, `data_classes.py:54-56` |
+| Devkit reference | `loaders.py:137,226-227,231`; `data_classes.py:54-56`; `algo.py` |
 
-The mirror was verified rather than trusted. Provenance runs to Motional; the bucket is
-transport only.
+The mirror was verified rather than trusted. Provenance runs to Motional; the bucket is transport.
 
-## Audit status
+## Open
 
-`tools/audit_result_a.py` is an adversarial audit designed to fail loudly. It checks scene and
-split counts against published figures, verifies every validation sample has a keyframe
-`LIDAR_TOP` ego pose, verifies no annotation is silently skipped, verifies visibility tokens
-resolve, rejects negative or absent point counts, independently recounts the headline figures,
-and rejects degenerate zero-size boxes as an innocent explanation for deletion.
+The stratification sequence for conditional c has not converged: 1.525 → 1.318 → 1.156 as
+covariates were added. We did not condition on object size, truncation at image boundaries, motion
+state, or lidar return count, and any of those could absorb more of the residual. **Conditional c
+is at most 1.16 and at least 1.** Whether further stratification reaches 1 is open.
 
-**All ten checks pass** on a checksum-verified local copy. Full transcript:
-[`results/audit_result_a.txt`](results/audit_result_a.txt).
-
-The decisive check is A3. nuScenes publishes its validation split as 6,019 samples; this
-pipeline's scene, split and sample join reproduces **exactly 6,019**. That is external validation
-of the join, not merely internal self-consistency. A8 and A9 then recount the headline figures by
-an independent code path and match to the object.
-
-Two errors were found and corrected before the audit passed, and both are recorded rather than
-quietly fixed:
-
-1. The class-range filter used a 3D distance where `data_classes.py:54-56` defines `ego_dist` as
-   the 2D (xy) norm. Correcting it moved 47 objects out of ~53,000 and left the 9.43% headline
-   unchanged. The insensitivity is a robustness observation, not a substitute for the audit.
-2. Three transfers were corrupted in flight on an unreliable connection. Two truncated mid-stream
-   and failed loudly; a third was silently corrupted and was caught only because `gsutil cp`
-   verifies CRC32C and deleted it. **A plain pipe would not have caught it.** The final analysis
-   was run against a local copy whose SHA-256 is recorded in the provenance table above and which
-   matches an independently downloaded earlier copy.
-
-An additional figure the audit surfaced: 16,162 surviving objects (12.01%) returned **zero lidar
-points**, of which radar rescues 3,468 — leaving the 12,694 that are deleted. Separately, 82,340
-(61.19%) returned zero radar points.
-
-## Reproducing
-
-```sh
-# Both scripts read the metadata tarball on stdin and land nothing on disk.
-gsutil cat gs://<bucket>/nuscenes/v1.0-trainval_meta.tgz | python3 tools/result_a.py
-gsutil cat gs://<bucket>/nuscenes/v1.0-trainval_meta.tgz | python3 tools/audit_result_a.py
-```
-
-Prefer a checksum-verified local copy over a pipe on an unreliable connection. `gsutil cp`
-verifies CRC32C; a plain pipe does not.
+Three detectors is better than two and is still three. All are 2019-era. Modern detectors may
+behave differently, and the Result H effect in particular deserves a modern pair.
 
 ## Non-claims
 
 This repository does not claim that nuScenes is wrong, that any published detection number is
-invalid, that any detector is better or worse than another, that sensor failures are dependent or
-independent, or that any safety conclusion follows. It reports what a documented filter removes.
-Interpretation beyond that requires evidence this repository does not yet hold.
+invalid, that any detector is better or worse than another, that any safety conclusion follows, or
+that RSS is unsound. It reports what a documented filter removes, what three published detectors
+do per object, and what follows arithmetically. Interpretation beyond that requires evidence this
+repository does not hold.
