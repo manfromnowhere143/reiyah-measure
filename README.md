@@ -16,6 +16,7 @@ authority.
 | Lifecycle status | `proposed` |
 | Result A | **measured** — all ten audits passed on a checksum-verified copy |
 | Result B | **measured** — analytic, derived from the same audited object set |
+| Result C | **hypothesis rejected** — the published estimate does not inherit the filter |
 | Reiyah Gate B | not authorized; not required for the work in this repository |
 | Operator acceptance | none |
 | Claims created | none |
@@ -137,6 +138,35 @@ criterion. Whatever its exact magnitude, the bias runs one way, and it grows wit
 This is not a claim that any published number is wrong. It is a claim that camera-only and
 lidar-only methods are not being scored against the same set of objects, and that the difference
 is largest where it matters most.
+
+## Result C: a hypothesis of ours, killed — and what replaced it
+
+We expected the published dependence literature to have inherited this filter. If Qiu's 2024 FAU
+dissertation, which measured camera-lidar error correlation on nuScenes, had run through the
+official evaluation pipeline, its estimate would be biased toward independence and we could
+report a correction.
+
+**It did not, and the hypothesis is dead.** Qiu builds an independent pipeline: a front-facing
+region of interest of 30 m lateral by 50 m longitudinal, split at 30 m, with Hungarian assignment
+between perception results and ground truths on GIoU. The dissertation describes exactly one
+ground-truth filter — *"Ps and GTs are filtered by the ROI"* — and the terms `num_lidar_pts`,
+`num_pts`, devkit, and zero-point appear nowhere in the document. Absence in the text is not
+proof of absence in the code, but the described method contains no point-count filter.
+
+What replaced the hypothesis is more interesting than the hypothesis was.
+
+**Two communities are measuring on two different denominators, and neither has noticed.** Qiu
+measured camera-lidar failure dependence on an *uncensored* ground-truth set and found
+correlation of 0.43 to 0.53 for false negatives. The detection benchmark that the entire field
+optimizes against removes 9.43% of its ground truth, selected by a range-sensor criterion —
+which is to say, it removes a biased sample of exactly the objects where lidar fails and the
+correlation Qiu measured would show up.
+
+So the phenomenon has been measured, and the leaderboard is structurally incapable of reflecting
+it. That is not a correction to Qiu. It is a reason their result has been ignorable: the numbers
+the field actually competes on cannot see what they found.
+
+This strengthens their work rather than undermining it, and we will say so in those words.
 
 ## Provenance
 
