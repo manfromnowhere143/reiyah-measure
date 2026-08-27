@@ -173,6 +173,28 @@ the field actually competes on cannot see what they found.
 
 This strengthens their work rather than undermining it, and we will say so in those words.
 
+## Independent replication
+
+Results A and B were re-derived on a second copy of nuScenes obtained separately and years
+earlier (file timestamps of March 2019), on different hardware, using code rewritten from scratch
+for the extracted directory layout rather than the streamed tarball.
+
+Every figure matches to the object:
+
+| Quantity | macOS, GCS tarball | Linux/L4, disk copy |
+|---|---|---|
+| Surviving distance filter | 134,565 | 134,565 |
+| Removed by point filter | 12,694 (9.43%) | 12,694 (9.43%) |
+| Of those, v80-100 visible | 2,207 | 2,207 |
+| Inflation 0-20 m | x1.0421 | x1.0421 |
+| Inflation 20-30 m | x1.1110 | x1.1110 |
+| Inflation 30-40 m | x1.1600 | x1.1600 |
+| Inflation 40-50 m | x1.2461 | x1.2461 |
+
+Three axes vary at once: the data copy, the machine, and the code path. Transcript at
+[`results/replication_independent_copy.txt`](results/replication_independent_copy.txt); the
+second implementation is [`tools/replicate_on_disk.py`](tools/replicate_on_disk.py).
+
 ## Provenance
 
 | Item | Value |

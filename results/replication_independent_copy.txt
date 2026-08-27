@@ -1,0 +1,8 @@
+REPLICATION on independently obtained copy (/datasets/nuscenes-full)
+surviving distance filter : 134,565
+removed by point filter   : 12,694  (9.43%)
+  of which v80-100        : 2,207
+  0-20m    N_full= 54,626  removed= 2,208  inflation=x1.0421
+  20-30m   N_full= 38,242  removed= 3,822  inflation=x1.1110
+  30-40m   N_full= 26,385  removed= 3,640  inflation=x1.1600
+  40-50m   N_full= 15,312  removed= 3,024  inflation=x1.2461
