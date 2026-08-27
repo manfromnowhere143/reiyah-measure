@@ -17,6 +17,8 @@ authority.
 | Result A | **measured** — all ten audits passed on a checksum-verified copy |
 | Result B | **measured** — analytic, derived from the same audited object set |
 | Result C | **hypothesis rejected** — the published estimate does not inherit the filter |
+| Result D | **measured** — RSS coefficient c is 1.24 to 2.37; independence rejected |
+| Corrections | two claims from Results A and B withdrawn, recorded in Result D |
 | Reiyah Gate B | not authorized; not required for the work in this repository |
 | Operator acceptance | none |
 | Claims created | none |
@@ -172,6 +174,68 @@ it. That is not a correction to Qiu. It is a reason their result has been ignora
 the field actually competes on cannot see what they found.
 
 This strengthens their work rather than undermining it, and we will say so in those words.
+
+## Result D (measured): the RSS coefficient, and a correction to Result A
+
+RSS Definition 32 calls two subsystem error events *one side c-approximate independent* when
+`P[r1 AND r2] <= c * P[r1] * P[r2]`, and Corollary 3 uses that to cut required validation evidence
+from roughly 10⁹ examples to 10⁵. The coefficient is never estimated in that paper. The smallest
+value consistent with an observed pair is the lift, `c = P[both miss] / (P[cam miss] * P[lid miss])`.
+
+We measured it, on the official camera-only and lidar-only detection results nuScenes publishes
+itself: **Mapillary MonoDIS** (29.8 mAP, camera) against **Megvii CBGS** (51.9 mAP, lidar), same
+val split, same format.
+
+| Operating point | N | cam miss | lid miss | joint observed | joint if independent | **c** |
+|---|---|---|---|---|---|---|
+| score >= 0.1 | 134,565 | 0.3137 | 0.1344 | 0.0958 | 0.0422 | **2.271** |
+| score >= 0.2 | 134,565 | 0.3945 | 0.2196 | 0.1627 | 0.0866 | **1.878** |
+| score >= 0.3 | 134,565 | 0.4643 | 0.3399 | 0.2505 | 0.1578 | **1.587** |
+| score >= 0.4 | 134,565 | 0.5590 | 0.4887 | 0.3724 | 0.2731 | **1.363** |
+| score >= 0.5 | 134,565 | 0.6862 | 0.5982 | 0.5085 | 0.4105 | **1.239** |
+
+**Independence is rejected at every operating point, and in every stratum we looked at.** The
+lowest value anywhere is 1.03; the highest is 2.37. Camera and lidar fail together substantially
+more often than the product of their marginals predicts.
+
+Read against Corollary 3: for this detector pair, the reduction in required validation evidence
+is overstated by a factor of roughly **1.2 to 2.3**, depending on where you set the threshold.
+
+By class at score >= 0.3, worst first: car 1.994, bus 1.609, barrier 1.579, traffic cone 1.444,
+pedestrian 1.361, motorcycle 1.301, truck 1.274, bicycle 1.259, construction vehicle 1.080,
+trailer 1.033.
+
+### Two things we got wrong, stated plainly
+
+**One: the direction of the censoring bias.** Result A closed by reasoning that a dependence
+estimate computed on the filtered denominator would be biased *toward* independence. Measurement
+says otherwise. At score >= 0.3 the official denominator gives c = 1.630 and the full denominator
+gives c = 1.587. The censoring inflates the coefficient by about 3%, it does not deflate it.
+Adding the removed objects raises the lidar marginal faster than it raises the joint, so the lift
+falls. **That claim is withdrawn.** The measured effect is small and runs the other way.
+
+**Two: where dependence is worst.** Result B's narrative assumed the interesting effects live at
+long range. For the coefficient they do not. At score >= 0.3, c falls from 1.970 within 20 m to
+1.173 at 40-50 m — because at long range both channels miss so often that the product of the
+marginals approaches the joint. Result B's *inflation* gradient is real and does grow with
+distance; the *dependence* gradient runs the opposite way. Two different quantities, and we
+conflated their narratives.
+
+### What survives
+
+The measurement itself, which is the point. RSS's coefficient has a value, it is not 1, and it is
+not close to 1 at any operating point a deployed system would use.
+
+### Caveats that belong on the number
+
+The matcher reproduces published mAP to within 0.07 (lidar) and 0.22 (camera), so the underlying
+per-object outcomes are sound. But: these are two specific detectors, one of them a 2019
+monocular model at 29.8 mAP; "miss" requires choosing a score threshold and the two detectors'
+confidences are not mutually calibrated, which is why the table sweeps the operating point rather
+than picking one; and dependence here is *marginal*, not conditional on scene difficulty. Range,
+occlusion and object size drive both channels and inflate any marginal association. A
+Cochran-Mantel-Haenszel treatment stratified on those covariates is the next refinement, and it
+will lower these numbers. It is unlikely to take them to 1.
 
 ## Independent replication
 

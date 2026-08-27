@@ -1,3 +1,6 @@
 *.tgz
 *.pyc
 __pycache__/
+predictions/
+*.json
+!results/*.json

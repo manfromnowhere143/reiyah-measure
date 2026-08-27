@@ -1,0 +1,63 @@
+====================================================================================
+RESULT D — joint camera/lidar miss, and the RSS coefficient c
+camera-only: Mapillary MonoDIS 29.8 mAP | lidar-only: Megvii CBGS 51.9 mAP
+nuScenes val, matched at 2.0 m by a matcher validated against published mAP
+====================================================================================
+
+### operating point: score >= 0.1
+denominator         N  cam miss  lid miss  joint obs  joint exp    c_hat
+OFFICIAL      121,871    0.2731    0.0956     0.0619     0.0261    2.369
+FULL          134,565    0.3137    0.1344     0.0958     0.0422    2.271
+
+### operating point: score >= 0.2
+denominator         N  cam miss  lid miss  joint obs  joint exp    c_hat
+OFFICIAL      121,871    0.3508    0.1715     0.1172     0.0602    1.948
+FULL          134,565    0.3945    0.2196     0.1627     0.0866    1.878
+
+### operating point: score >= 0.3
+denominator         N  cam miss  lid miss  joint obs  joint exp    c_hat
+OFFICIAL      121,871    0.4212    0.2900     0.1992     0.1222    1.630
+FULL          134,565    0.4643    0.3399     0.2505     0.1578    1.587
+
+### operating point: score >= 0.4
+denominator         N  cam miss  lid miss  joint obs  joint exp    c_hat
+OFFICIAL      121,871    0.5200    0.4447     0.3217     0.2313    1.391
+FULL          134,565    0.5590    0.4887     0.3724     0.2731    1.363
+
+### operating point: score >= 0.5
+denominator         N  cam miss  lid miss  joint obs  joint exp    c_hat
+OFFICIAL      121,871    0.6560    0.5610     0.4640     0.3680    1.261
+FULL          134,565    0.6862    0.5982     0.5085     0.4105    1.239
+
+### by ego distance, at score >= 0.3
+band      denominator        N  cam miss  lid miss  joint obs    c_hat
+0-20m     OFFICIAL      52,416    0.2703    0.1954     0.1032    1.954
+0-20m     FULL          54,624    0.2934    0.2170     0.1254    1.970
+20-30m    OFFICIAL      34,422    0.4432    0.3109     0.2147    1.558
+20-30m    FULL          38,243    0.4894    0.3597     0.2674    1.519
+30-40m    OFFICIAL      22,745    0.5976    0.3813     0.3000    1.317
+30-40m    FULL          26,386    0.6374    0.4470     0.3663    1.286
+40-50m    OFFICIAL      12,288    0.6771    0.4666     0.3787    1.199
+40-50m    FULL          15,312    0.7125    0.5446     0.4552    1.173
+
+### by class, FULL denominator, score >= 0.3
+class                        N  cam miss  lid miss  joint obs    c_hat
+car                     59,522    0.3954    0.2484     0.1959    1.994
+pedestrian              25,678    0.5284    0.4146     0.2982    1.361
+barrier                 16,911    0.3804    0.3980     0.2390    1.579
+traffic_cone            12,491    0.4644    0.4234     0.2840    1.444
+truck                    9,764    0.6221    0.3634     0.2880    1.274
+trailer                  2,446    0.9199    0.4632     0.4403    1.033
+bus                      2,085    0.4974    0.2163     0.1731    1.609
+bicycle                  2,060    0.5631    0.6117     0.4335    1.259
+motorcycle               2,009    0.5913    0.4141     0.3186    1.301
+construction_vehicle     1,599    0.8924    0.6642     0.6404    1.080
+
+------------------------------------------------------------------------------------
+c_hat = 1 is independence. Above 1, the two channels fail together more
+often than independence predicts, and RSS Corollary 3's reduction in
+required validation evidence is overstated by that factor.
+
+The OFFICIAL row is what the benchmark can see. The FULL row includes the
+12,694 objects the zero-point filter removes. Compare them.
+------------------------------------------------------------------------------------
