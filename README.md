@@ -52,9 +52,9 @@ flowchart TB
     FULL["134,565 objects<br/>distance filter only"]
     M["per-object matcher<br/>devkit accumulate() with the<br/>match set retained"]
     V{"reproduces<br/>published mAP?"}
-    MATRIX["per-object outcome matrix<br/>3 detectors x 134,565 objects"]
+    MATRIX["per-object outcome matrix<br/>4 detectors x 134,565 objects<br/>6 pairwise comparisons"]
     FULL --> M --> V
-    V -->|"lidar 51.97 vs 51.90<br/>camera 29.58 vs 29.80<br/>lidar-2 29.54 vs 29.50"| MATRIX
+    V -->|"Megvii 51.97 vs 51.90<br/>Mapillary 29.58 vs 29.80<br/>PointPillars 29.54 vs 29.50"| MATRIX
     V -->|no| STOP["withdraw, do not weaken"]
   end
 
@@ -336,8 +336,14 @@ covariates were added. We did not condition on object size, truncation at image 
 state, or lidar return count, and any of those could absorb more of the residual. **Conditional c
 is at most 1.16 and at least 1.** Whether further stratification reaches 1 is open.
 
-Three detectors is better than two and is still three. All are 2019-era. Modern detectors may
-behave differently, and the Result H effect in particular deserves a modern pair.
+Four detectors, six pairs, three lidar architectures — but **only one camera model**. Every
+cross-modality pair shares Mapillary MonoDIS, so that column has no internal replication. A second
+independent camera detector is the single most valuable next input, and none is published: the
+survey that found these files established that no modern camera-only nuScenes predictions exist
+anywhere downloadable. Getting one means running inference.
+
+The Result H accuracy trend (7.01 → 15.86 → 31.99) rests on three points. It is a clean monotone
+ordering with a plausible mechanism, and it is three points.
 
 ## Non-claims
 
