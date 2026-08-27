@@ -66,28 +66,27 @@ That claim would have been demolished on contact.
 
 | Item | State |
 |---|---|
-| Result A | **computed, audit incomplete** — see README "Audit status" |
+| Result A | **measured.** All ten audits passed, transcript at `results/audit_result_a.txt` |
 | Headline | 12,694 of 134,565 (9.43%) removed by the point filter |
-| Corrected error | 3D distance replaced by 2D per `data_classes.py:54-56`; headline unchanged |
-| Audit runs | two terminated by network truncation; one transfer rejected by CRC32C integrity check |
+| External validation | A3 reproduces nuScenes' published val sample count of 6,019 exactly |
+| Analysed bytes | SHA-256 `db48746b10e3544d5ef619eaa3d687e3960626fe1b4422ed856711da5aa7325b` |
+| Corrected errors | 3D distance replaced by 2D per `data_classes.py:54-56` (47 of ~53,000 objects, headline unchanged); three corrupted transfers, one caught only by CRC32C |
 | Reiyah repository | **untouched.** Its 1.2.1 work in flight belongs to another workstream |
 
 ## 6. The next smallest action
 
-Complete the audit on a checksum-verified local copy:
+Result A is measured and needs no further verification. The next smallest action is to determine
+whether the published dependence literature inherited this same filter:
 
-```sh
-cd ~/workspace/reiyah-measure
-gsutil cp gs://sunlit-unison-487018-b0-sentinel/nuscenes/v1.0-trainval_meta.tgz /tmp/meta.tgz
-shasum -a 256 /tmp/meta.tgz          # record this digest in the README provenance table
-python3 tools/audit_result_a.py < /tmp/meta.tgz
-```
+Qiu's 2024 FAU dissertation measured camera-lidar error correlation on nuScenes. If that analysis
+used the official evaluation pipeline, its estimate is biased toward independence, because the
+filter removes the "range sensors saw nothing" cell that is most informative about joint failure.
+Establishing that is a literature question first (read the thesis method section) and an
+empirical one second.
 
-`gsutil cp` verifies CRC32C and will delete a corrupted transfer; a plain pipe will not. On an
-unreliable connection this distinction has already produced one silently corrupted download.
-
-If every audit passes, Result A becomes a measurement and the README status table changes. If any
-audit fails, **the finding is withdrawn, not weakened.**
+State it carefully and generously if true: it strengthens their conclusion rather than
+undermining it. Their finding was that assuming independence overestimates system performance.
+A censored denominator means they understated their own case.
 
 ## 7. Then, in order
 

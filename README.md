@@ -14,13 +14,14 @@ authority.
 | Field | Value |
 |---|---|
 | Lifecycle status | `proposed` |
-| Result A | computed, **audit incomplete** |
+| Result A | **measured** — all ten audits passed on a checksum-verified copy |
 | Reiyah Gate B | not authorized; not required for the work in this repository |
 | Operator acceptance | none |
 | Claims created | none |
 
 No finding in this repository may be described as a result until its audit passes. A computed
-number is not a measurement.
+number is not a measurement. Result A has now passed; the audit transcript is retained at
+[`results/audit_result_a.txt`](results/audit_result_a.txt).
 
 ## What this is for
 
@@ -31,7 +32,7 @@ correctly, on a denominator that is stated rather than assumed.
 
 This repository is where the counting happens.
 
-## Result A (computed, unaudited)
+## Result A (measured)
 
 **Question.** The official nuScenes 3D detection evaluation removes ground-truth objects before
 any detector is scored. How many, and which ones?
@@ -53,7 +54,7 @@ are precisely the ones only they could have found.
 (lines 226-227), then this point filter (line 231), then bike-rack filtering (line 234+). The
 honest denominator for this question is therefore *boxes surviving the distance filter*.
 
-**Computed figures.** nuScenes v1.0-trainval, official 150-scene validation split, ten evaluated
+**Measured figures.** nuScenes v1.0-trainval, official 150-scene validation split, ten evaluated
 detection classes:
 
 | Quantity | Value |
@@ -96,6 +97,7 @@ through the official pipeline is biased toward independence.
 | Dataset | nuScenes v1.0-trainval metadata (`v1.0-trainval_meta.tgz`) |
 | Official source | `https://motional-nuscenes.s3.amazonaws.com/public/v1.0/v1.0-trainval_meta.tgz` |
 | Byte size | 461,678,030 |
+| SHA-256 of analysed bytes | `db48746b10e3544d5ef619eaa3d687e3960626fe1b4422ed856711da5aa7325b` |
 | Transport used | `gs://sunlit-unison-487018-b0-sentinel/nuscenes/` (mirror) |
 | Mirror verification | exact size match, plus five 512 KiB ranges at offsets 0, 104857600, 230000000, 400000000 and 461155630 confirmed byte-identical to the official source |
 | Licence | CC BY-NC-SA 4.0, non-commercial research use |
@@ -112,16 +114,29 @@ split counts against published figures, verifies every validation sample has a k
 resolve, rejects negative or absent point counts, independently recounts the headline figures,
 and rejects degenerate zero-size boxes as an innocent explanation for deletion.
 
-**It has not yet completed.** Two runs were terminated by network truncation mid-stream, and a
-third transfer was rejected by gsutil's CRC32C integrity check, which detected in-flight
-corruption and deleted the local file. Until the audit passes on a checksum-verified local copy,
-Result A is a computed number and not a measurement.
+**All ten checks pass** on a checksum-verified local copy. Full transcript:
+[`results/audit_result_a.txt`](results/audit_result_a.txt).
 
-One error has already been found and corrected by this process: the first implementation used a
-3D distance for the class-range filter, where `data_classes.py:54-56` defines `ego_dist` as the
-2D (xy) norm. Correcting it moved the distance-filter count by 47 objects out of ~53,000 and left
-the 9.43% headline unchanged. That insensitivity is recorded as a robustness observation, not as
-a substitute for the audit.
+The decisive check is A3. nuScenes publishes its validation split as 6,019 samples; this
+pipeline's scene, split and sample join reproduces **exactly 6,019**. That is external validation
+of the join, not merely internal self-consistency. A8 and A9 then recount the headline figures by
+an independent code path and match to the object.
+
+Two errors were found and corrected before the audit passed, and both are recorded rather than
+quietly fixed:
+
+1. The class-range filter used a 3D distance where `data_classes.py:54-56` defines `ego_dist` as
+   the 2D (xy) norm. Correcting it moved 47 objects out of ~53,000 and left the 9.43% headline
+   unchanged. The insensitivity is a robustness observation, not a substitute for the audit.
+2. Three transfers were corrupted in flight on an unreliable connection. Two truncated mid-stream
+   and failed loudly; a third was silently corrupted and was caught only because `gsutil cp`
+   verifies CRC32C and deleted it. **A plain pipe would not have caught it.** The final analysis
+   was run against a local copy whose SHA-256 is recorded in the provenance table above and which
+   matches an independently downloaded earlier copy.
+
+An additional figure the audit surfaced: 16,162 surviving objects (12.01%) returned **zero lidar
+points**, of which radar rescues 3,468 — leaving the 12,694 that are deleted. Separately, 82,340
+(61.19%) returned zero radar points.
 
 ## Reproducing
 

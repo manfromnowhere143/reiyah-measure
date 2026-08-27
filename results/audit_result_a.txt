@@ -1,0 +1,15 @@
+[PASS] A1 trainval scenes: got 850 expected 850 
+[PASS] A2 val scenes named in splits.py: got 150 expected 150 
+[PASS] A3 val samples (published: 6019): got 6,019 expected 6,019 
+[PASS] A4 val samples missing LIDAR_TOP ego pose: got 0 expected 0 
+[PASS] A5 val annotations skipped (no ego pose): got 0 expected 0 
+[PASS] A6 val annotations with no visibility token: got 0 expected 0 
+[PASS] A7 annotations with bad point counts: got 0 expected 0 
+
+[INFO] independent recount  surviving=134,565  deleted(both zero)=12,694  (9.43%)
+[INFO] zero-lidar=16,162 (12.01%)   zero-radar=82,340 (61.19%)
+[PASS] A8 recount matches result_a2: got 12,694 expected 12,694 
+[PASS] A9 surviving recount matches result_a2: got 134,565 expected 134,565 
+[PASS] A10 deleted boxes that are degenerate (zero size): got 0 expected 0 
+
+ALL AUDITS PASSED
