@@ -19,6 +19,7 @@ import io, os, sys, urllib.request, zipfile
 TARGETS = [
     ("https://www.nuscenes.org/data/detection-megvii.zip", "megvii_val.json", "lidar-only"),
     ("https://www.nuscenes.org/data/detection-mapillary.zip", "mapillary_val.json", "camera-only"),
+    ("https://www.nuscenes.org/data/detection-pointpillars.zip", "pointpillars-val.json", "lidar-only"),
 ]
 OUT = sys.argv[1] if len(sys.argv) > 1 else "predictions"
 

@@ -1,0 +1,20 @@
+==========================================================================================
+RESULT H — does modality diversity buy failure independence?
+pairwise lift between published nuScenes detectors, val split, score >= 0.3
+==========================================================================================
+
+pair                        modalities            marginal c   cond. c  cond. MH OR
+megvii x pointpillars       lidar/lidar                1.712     1.313        7.010   SAME modality
+mapillary x megvii          camera/lidar               1.587     1.156        2.810   cross-modality
+mapillary x pointpillars    camera/lidar               1.393     1.101        2.193   cross-modality
+
+------------------------------------------------------------------------------------------
+same-modality  mean marginal c = 1.712   conditional c = 1.313
+cross-modality mean marginal c = 1.490   conditional c = 1.129
+
+modality diversity reduces the marginal lift by 31% of its excess over independence
+
+Accuracy control: PointPillars 29.5 mAP against Mapillary 29.8 mAP is a
+cross-modality pair at matched accuracy. Comparing it to Megvii 51.9 x
+Mapillary separates a modality effect from an accuracy effect.
+------------------------------------------------------------------------------------------
