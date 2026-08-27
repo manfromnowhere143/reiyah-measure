@@ -89,15 +89,20 @@ with a five-fold gradient in range, and that this is invisible in every publishe
 number. The 2,207 objects annotated as 80-100% visible in the cameras are the cleanest case:
 fully camera-visible, and excluded.
 
-**Why it bears on dependence estimation.** An object the camera can see and the range sensors
-cannot is the single most informative case for estimating whether two sensing channels fail
-together. The filter removes that cell by construction, so a dependence estimate computed
-*through the official pipeline* would be biased toward independence.
+**Why it bears on dependence estimation — and where we were wrong.** An object the camera can see
+and the range sensors cannot is the most informative single case for estimating whether two
+channels fail together, and the filter removes that cell by construction. We reasoned from that
+to a claim: a dependence estimate computed through the official pipeline would be biased *toward*
+independence.
 
-We tested whether the published estimate is affected. It is not — see Result C, where that
-hypothesis is recorded as rejected. The consequence turns out to be structural rather than
-corrective: the field's benchmark cannot reflect a phenomenon that has already been measured
-elsewhere.
+**Measurement contradicted it.** Result D computes the coefficient on both denominators and finds
+1.630 filtered against 1.587 unfiltered — the censoring inflates dependence by about 3%, it does
+not deflate it. Adding the removed objects raises the lidar marginal faster than it raises the
+joint, so the lift falls. The claim is withdrawn, and it is left standing here with its
+refutation attached rather than edited out.
+
+Separately, Result C establishes that the published dependence estimate does not run through this
+pipeline at all, so no correction to it was ever available.
 
 ## Result B (measured): camera and lidar are not scored on the same objects
 
