@@ -1,0 +1,40 @@
+======================================================================================
+RESULT G — the evidence cost of the measured dependence
+RSS Corollary 3:  P <= 6 c p^2   ->   N ~ sqrt(6c/P)   ->   N proportional to sqrt(c)
+======================================================================================
+
+RSS's own worked example, target P = 1e-9, assuming independence (c = 1):
+  examples per subsystem = 77,460   (the paper says 'order of 10^5')
+
+ score  marginal c    N required    vs c=1  extra evidence
+   0.1       2.271       116,730     1.507           50.7%
+   0.2       1.878       106,151     1.370           37.0%
+   0.3       1.587        97,581     1.260           26.0%
+   0.4       1.363        90,432     1.167           16.7%
+   0.5       1.239        86,221     1.113           11.3%
+
+For comparison, the CONDITIONAL coefficient (Result E). This is not the
+quantity Corollary 3 consumes, but it bounds how much of the cost is
+attributable to dependence beyond observable difficulty:
+
+ score     cond. c    N required    vs c=1  extra evidence
+   0.1       1.365        90,499     1.168           16.8%
+   0.2       1.245        86,429     1.116           11.6%
+   0.3       1.156        83,283     1.075            7.5%
+   0.4       1.091        80,907     1.045            4.5%
+   0.5       1.052        79,448     1.026            2.6%
+
+--------------------------------------------------------------------------------------
+At a representative operating point (score >= 0.3), the measured marginal
+lift is 1.587. Because required evidence scales as sqrt(c), that is
+1.260x more examples per subsystem, or 26% more --
+not the 59% a linear reading would suggest.
+
+This is a SMALLER consequence than we implied two results ago, and it is
+the correct one. Corollary 3's shortcut is not destroyed by the measured
+dependence. It is understated by about a quarter.
+
+Whether a quarter matters is an engineering judgement, not a statistical
+one. At RSS's own worked target it is the difference between roughly
+77,460 and 97,581 examples per subsystem.
+--------------------------------------------------------------------------------------

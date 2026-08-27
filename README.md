@@ -20,7 +20,8 @@ authority.
 | Result D | **measured, superseded** — marginal c 1.24 to 2.37 |
 | Result E | **measured** — conditional c = **1.16**; 73% of D was shared difficulty |
 | Result F | **measured** — B's bound closed: lidar recovers 18.13% of removed objects |
-| Corrections | four claims withdrawn on evidence; all left standing with refutations |
+| Result G | **derived** — the real cost is **+26% evidence**; N scales as sqrt(c) |
+| Corrections | six claims withdrawn or corrected; all left standing with refutations |
 | Reiyah Gate B | not authorized; not required for the work in this repository |
 | Operator acceptance | none |
 | Claims created | none |
@@ -289,9 +290,10 @@ than silently dropped.
 
 ### The corrected headline
 
-**Result D's 1.587 is a marginal figure and should not be quoted as the coefficient.** The
-defensible number is **c = 1.16 conditional on observable difficulty**, and against RSS
-Corollary 3 that means the validation reduction is overstated by roughly 16%, not by 59%.
+**Result D's 1.587 is the marginal figure; 1.156 is the conditional one. Both are correct, for
+different questions** — and Result G shows we then misused both. Corollary 3 consumes the
+*marginal* lift, because a deployed system cannot condition on range. The conditional lift answers
+the mechanism question instead: how much of the association survives shared observable difficulty.
 
 That is a smaller claim than the one we published two commits ago. It is also the one that
 survives the first question a reviewer will ask.
@@ -310,6 +312,51 @@ push the estimate down. Whether it reaches 1 is open, and we will say so until i
 The two estimators disagree in magnitude by design and both are reported: the lift is the quantity
 RSS Definition 32 is written in, while the Mantel-Haenszel odds ratio is the standard tool for
 conditional association and is far less attenuated when marginals are large.
+
+## Result G (derived): what the dependence actually costs, and two more of our errors
+
+Results D and E both got the *number* right and the *use* wrong. Fixing that changes the
+conclusion, and makes it smaller.
+
+**Error one: which coefficient Corollary 3 consumes.** Result E concluded "quote 1.16, not 1.59."
+That is wrong here. Corollary 3 bounds the system-level probability of a safety-critical mistake
+integrated over the operating distribution. A deployed vehicle does not condition on range;
+objects arrive at whatever range they arrive at. **The marginal lift is the operationally correct
+input.** The conditional lift remains a real finding about mechanism — 73% of the excess is shared
+difficulty — but it is not what the bound takes.
+
+**Error two, and the larger one: evidence does not scale linearly in c.** Saying "c = 1.587, so
+the shortcut is overstated by 59%" assumes it does. From the bound itself:
+
+```
+P  <=  6 c p²        ->        p = sqrt( P / 6c )        ->        N ~ 1/p = sqrt( 6c / P )
+```
+
+**Required evidence scales as the square root of the lift.** Our reading of Corollary 3 checks out
+against the paper's own worked example: at target `P = 1e-9` with `c = 1`, this gives 77,460
+examples per subsystem, and RSS says "order of 10⁵".
+
+| Score | marginal c | examples per subsystem | vs independence | **extra evidence** |
+|---|---|---|---|---|
+| >= 0.1 | 2.271 | 116,730 | 1.507x | **50.7%** |
+| >= 0.2 | 1.878 | 106,151 | 1.370x | **37.0%** |
+| >= 0.3 | 1.587 | 97,581 | 1.260x | **26.0%** |
+| >= 0.4 | 1.363 | 90,432 | 1.167x | **16.7%** |
+| >= 0.5 | 1.239 | 86,221 | 1.113x | **11.3%** |
+
+### The honest conclusion
+
+At a representative operating point, **Corollary 3's shortcut understates required evidence by
+about a quarter** — roughly 97,600 examples per subsystem rather than 77,500.
+
+That is a materially smaller claim than "overstated by 59%", and materially smaller again than the
+2.3x we led with three results ago. **Corollary 3 is not destroyed by the measured dependence. It
+is understated by about 26%.**
+
+Whether 26% matters is an engineering judgement rather than a statistical one, and we will not
+make it for anyone. What we will say is that the coefficient RSS leaves unestimated has a value,
+that value is not 1, and the correction it implies is a quarter more validation evidence rather
+than the four orders of magnitude the assumption was buying.
 
 ### Caveats that belong on the number
 
