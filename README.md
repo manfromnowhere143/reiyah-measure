@@ -19,7 +19,8 @@ authority.
 | Result C | **hypothesis rejected** — the published estimate does not inherit the filter |
 | Result D | **measured, superseded** — marginal c 1.24 to 2.37 |
 | Result E | **measured** — conditional c = **1.16**; 73% of D was shared difficulty |
-| Corrections | three claims withdrawn on evidence; all left standing with refutations |
+| Result F | **measured** — B's bound closed: lidar recovers 18.13% of removed objects |
+| Corrections | four claims withdrawn on evidence; all left standing with refutations |
 | Reiyah Gate B | not authorized; not required for the work in this repository |
 | Operator acceptance | none |
 | Claims created | none |
@@ -142,8 +143,28 @@ statically occluded, since adjacent sweeps then share nearly the same geometry.
 
 So "undetectable" is too strong, and the inflation factor is an **upper bound**: it is the
 correction if zero keyframe returns implies non-detection. The true correction lies between 1.0
-and the figure shown. Closing that gap requires running a detector, which this repository has not
-yet done.
+and the figure shown.
+
+**Result F closes that gap empirically.** Using the published lidar-only detections, at score
+>= 0.3 the detector recovers **18.13%** of the objects the filter removes. So the assumption of
+0% was wrong, multi-sweep accumulation does rescue about a fifth of them, and the true correction
+is roughly 82% of the stated bound — **x1.085 rather than x1.104** overall.
+
+The assumption was directionally right and quantitatively too strong. Zero-point objects are
+detected by the lidar arm at 18.13% against 71.00% for everything else: four times harder, not
+impossible.
+
+| Score | lidar finds zero-point | lidar finds others | camera finds zero-point | camera finds others |
+|---|---|---|---|---|
+| >= 0.1 | 49.27% | 90.44% | 29.68% | 72.69% |
+| >= 0.3 | 18.13% | 71.00% | 12.29% | 57.88% |
+| >= 0.5 | 4.45% | 43.90% | 2.38% | 34.40% |
+
+**And this tempers Result A's framing too.** The camera arm finds only 12.29% of the removed
+objects against 57.88% of the rest. These are objects that are hard for *everyone*, not a cache of
+camera-visible detections being thrown away. The 2,207 annotated at 80-100% camera visibility
+remain the cleanest subset of the claim, but "the objects only a camera could have found" was
+too strong a gloss on the whole 12,694.
 
 What does not depend on the assumption is the direction. The removal criterion is a range-sensor
 criterion. Whatever its exact magnitude, the bias runs one way, and it grows with distance.
