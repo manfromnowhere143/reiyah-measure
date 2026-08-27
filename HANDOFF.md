@@ -97,14 +97,45 @@ of 0.43 to 0.53, while the benchmark the field optimises against removes a range
 9.43% of its ground truth. The phenomenon has been measured and the leaderboard cannot see it.
 **Say this in a way that strengthens Qiu's work, because it does.**
 
+## 5c. Results F, G and H
+
+**Result F.** Closed Result B's upper bound without a detector run. At score >= 0.3 the lidar arm
+recovers **18.13%** of the removed objects against 71.00% of everything else, so multi-sweep
+accumulation rescues about a fifth and the true inflation is **x1.085, not x1.104**. Also tempers
+Result A: the camera arm finds only 12.29% of removed objects against 57.88% of the rest, so these
+are hard for everyone rather than discarded camera-visible detections.
+
+**Result G.** Two errors of use, not of computation. Corollary 3 consumes the **marginal** lift,
+because a deployed vehicle cannot condition on range; Result E's "quote 1.16" was wrong for that
+purpose. And evidence scales as **sqrt(c)**, not c: from `P <= 6cp²`, `p = sqrt(P/6c)` and
+`N ~ 1/p`. Verified against RSS's own worked example (c=1, target 1e-9 gives 77,460, paper says
+"order of 10^5"). So the real cost at score >= 0.3 is **+26% evidence, not +59%**. Corollary 3 is
+understated by about a quarter, not destroyed.
+
+**Result H.** Added PointPillars (lidar, 29.5 mAP; matcher validates at 29.54). Holding Megvii
+fixed and varying only the partner's modality at matched partner accuracy: lidar partner gives
+conditional MH odds ratio **7.010**, camera partner **2.810**. **Modality diversity cuts joint-
+failure odds by 60%** — and does not eliminate dependence, since cross-modality c stays at 1.10 to
+1.16.
+
 ## 6. The next smallest action
 
 Results A, B and C are settled. The open gap is Result B's upper bound, and only a detector can
 close it.
 
-**Run one camera-only and one lidar-only detector over the validation set twice — with the
-zero-point filter and without it — and report the delta.** That converts the x1.1042 bound into a
-measurement, and it directly answers the question a reviewer will ask first.
+That step is **done**, and without a GPU. nuScenes publishes detection results itself (devkit
+`eval/tracking/README.md`, Baselines): `detection-{megvii,mapillary,pointpillars}.zip`, val split,
+official format, reachable with HTTP range requests over the zip tail for about 250 MB of
+transfer. `tools/fetch_predictions.py` does it. **Do not download 370 GB or start a GPU for this
+class of question.**
+
+The open item is now convergence. Conditional c fell 1.525 -> 1.318 -> 1.156 as covariates were
+added and has not obviously converged. **Stratify additionally on object size, truncation at image
+boundaries, motion state and lidar return count, and report whether c reaches 1.**
+
+Be careful with `num_lidar_pts` as a covariate: it is arguably a mediator of lidar failure rather
+than a confounder, so conditioning on it may remove the very path being measured. Say which it is
+before using it, not after.
 
 Stack, already verified: nuScenes is the only dataset where both arms exist as downloadable
 weights. Camera arm PETR, lidar arm BEVFusion-lidar or CenterPoint, **both from MMDetection3D
