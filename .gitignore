@@ -1,0 +1,3 @@
+*.tgz
+*.pyc
+__pycache__/

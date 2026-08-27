@@ -1,0 +1,63 @@
+
+==============================================================================
+RESULT A (exact) — GT deleted by nuscenes-devkit loaders.py:231
+nuScenes v1.0-trainval, official val split, official filter ORDER
+==============================================================================
+
+Val annotations in the 10 evaluated classes : 187,528
+Dropped first by the DISTANCE filter        : 52,963
+Surviving distance filter (true denominator): 134,565
+
+THEN DELETED by the zero-point filter       : 12,694  (9.43%)
+  ...of which fully camera-visible (v80-100): 2,207
+
+--- by detection class ---
+                                          kept+del  deleted    % del
+car                                         59,522    6,479   10.89%
+pedestrian                                  25,678    2,178    8.48%
+traffic_cone                                12,491    1,921   15.38%
+barrier                                     16,911    1,008    5.96%
+truck                                        9,764      504    5.16%
+bicycle                                      2,060      226   10.97%
+motorcycle                                   2,009      154    7.67%
+trailer                                      2,446      115    4.70%
+construction_vehicle                         1,599       86    5.38%
+bus                                          2,085       23    1.10%
+
+--- by RAW category ---
+                                          kept+del  deleted    % del
+vehicle.car                                 59,522    6,479   10.89%
+human.pedestrian.adult                      24,371    2,067    8.48%
+movable_object.trafficcone                  12,491    1,921   15.38%
+movable_object.barrier                      16,911    1,008    5.96%
+vehicle.truck                                9,764      504    5.16%
+vehicle.bicycle                              2,060      226   10.97%
+vehicle.motorcycle                           2,009      154    7.67%
+vehicle.trailer                              2,446      115    4.70%
+human.pedestrian.construction_worker         1,069      104    9.73%
+vehicle.construction                         1,599       86    5.38%
+vehicle.bus.bendy                              309       13    4.21%
+vehicle.bus.rigid                            1,776       10    0.56%
+human.pedestrian.child                         166        7    4.22%
+human.pedestrian.police_officer                 72        0    0.00%
+
+--- by annotated camera visibility ---
+                                          kept+del  deleted    % del
+v0-40                                       32,113    8,676   27.02%
+v40-60                                      13,757      977    7.10%
+v60-80                                      18,650      834    4.47%
+v80-100                                     70,045    2,207    3.15%
+
+--- by ego distance ---
+                                          kept+del  deleted    % del
+0-20m                                       54,626    2,208    4.04%
+20-30m                                      38,242    3,822    9.99%
+30-40m                                      26,385    3,640   13.80%
+40-50m                                      15,312    3,024   19.75%
+
+--- by scene condition ---
+                                          kept+del  deleted    % del
+clear/other                                108,404   10,351    9.55%
+rain                                        22,693    2,105    9.28%
+night                                        3,468      238    6.86%
+==============================================================================
