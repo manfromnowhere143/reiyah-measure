@@ -17,8 +17,9 @@ authority.
 | Result A | **measured** — all ten audits passed on a checksum-verified copy |
 | Result B | **measured** — analytic, derived from the same audited object set |
 | Result C | **hypothesis rejected** — the published estimate does not inherit the filter |
-| Result D | **measured** — RSS coefficient c is 1.24 to 2.37; independence rejected |
-| Corrections | two claims from Results A and B withdrawn, recorded in Result D |
+| Result D | **measured, superseded** — marginal c 1.24 to 2.37 |
+| Result E | **measured** — conditional c = **1.16**; 73% of D was shared difficulty |
+| Corrections | three claims withdrawn on evidence; all left standing with refutations |
 | Reiyah Gate B | not authorized; not required for the work in this repository |
 | Operator acceptance | none |
 | Claims created | none |
@@ -199,9 +200,9 @@ val split, same format.
 | score >= 0.4 | 134,565 | 0.5590 | 0.4887 | 0.3724 | 0.2731 | **1.363** |
 | score >= 0.5 | 134,565 | 0.6862 | 0.5982 | 0.5085 | 0.4105 | **1.239** |
 
-**Independence is rejected at every operating point, and in every stratum we looked at.** The
-lowest value anywhere is 1.03; the highest is 2.37. Camera and lidar fail together substantially
-more often than the product of their marginals predicts.
+**These are MARGINAL figures and Result E supersedes them as the headline.** Conditioning on
+observable scene difficulty removes 73% of this excess, leaving c = 1.16. The table below is
+retained because it is the input to that correction, not because 1.587 is the answer.
 
 Read against Corollary 3: for this detector pair, the reduction in required validation evidence
 is overstated by a factor of roughly **1.2 to 2.3**, depending on where you set the threshold.
@@ -230,6 +231,64 @@ conflated their narratives.
 
 The measurement itself, which is the point. RSS's coefficient has a value, it is not 1, and it is
 not close to 1 at any operating point a deployed system would use.
+
+## Result E (measured): most of Result D was shared difficulty. Some of it was not.
+
+The obvious attack on Result D: range, occlusion and object size make an object hard for **both**
+channels at once, so two detectors failing on the same hard objects produce marginal association
+with no interesting common cause. We ran that test against ourselves rather than waiting for a
+reviewer to run it.
+
+Stratifying on class x range band x annotated camera visibility, at score >= 0.3, full denominator:
+
+| Estimate | Value |
+|---|---|
+| Unstratified lift (Result D) | 1.587 |
+| **Conditioned on class, range and visibility** | **1.156** |
+| Share of the excess explained by difficulty | **73.4%** |
+| Residual excess over independence | 15.6% |
+| Mantel-Haenszel common odds ratio | 2.810 |
+| CMH chi-square, 1 df | **4,924** |
+
+**Three quarters of the dependence was shared difficulty. The remaining quarter is not, and it is
+not close to noise.** A CMH statistic of 4,924 on one degree of freedom rejects conditional
+independence by any margin anyone would care about; the threshold for p < 0.001 is 10.83.
+
+The pattern holds as strata get finer, which is what a real effect looks like — the lift decays
+toward 1 as more difficulty is absorbed, but stops above it:
+
+| Stratification | strata | c at 0.3 | MH OR | CMH |
+|---|---|---|---|---|
+| class only | 10 | 1.525 | 5.795 | 19,607 |
+| class x range | 33 | 1.318 | 4.281 | 11,912 |
+| class x range x visibility | 132 | **1.156** | 2.810 | 4,924 |
+
+Only 88 objects of 134,565 fall in strata below the 30-object minimum; they are reported rather
+than silently dropped.
+
+### The corrected headline
+
+**Result D's 1.587 is a marginal figure and should not be quoted as the coefficient.** The
+defensible number is **c = 1.16 conditional on observable difficulty**, and against RSS
+Corollary 3 that means the validation reduction is overstated by roughly 16%, not by 59%.
+
+That is a smaller claim than the one we published two commits ago. It is also the one that
+survives the first question a reviewer will ask.
+
+### What could still take it to 1
+
+Honestly: unobserved difficulty. We conditioned on class, range and annotated camera visibility.
+We did not condition on object size, truncation at image boundaries, motion state, or lidar return
+count, and any of those could absorb more of the residual. The lift decayed from 1.53 to 1.32 to
+1.16 as we added covariates, and the sequence has not obviously converged.
+
+So the correct statement is bounded on both sides: **the coefficient is at most 1.16 and at least
+1**, conditional dependence is rejected on the covariates we have, and further stratification will
+push the estimate down. Whether it reaches 1 is open, and we will say so until it is settled.
+
+The two estimators disagree in magnitude by design and both are reported: the lift is the quantity
+RSS Definition 32 is written in, while the Mantel-Haenszel odds ratio is the standard tool for
+conditional association and is far less attenuated when marginals are large.
 
 ### Caveats that belong on the number
 
