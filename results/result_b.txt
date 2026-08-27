@@ -1,0 +1,50 @@
+==================================================================================
+RESULT B — recall inflation granted to a lidar-only detector
+nuScenes v1.0-trainval, official val split, post class-range filter
+==================================================================================
+
+Annotated and in range (N_full)      : 134,565
+Removed by loaders.py:231            : 12,694
+Officially scored against (N_eval)   : 121,871
+
+LIDAR-ONLY RECALL INFLATION          : x1.1042   (+10.42%)
+Removed objects a camera could see   : 2,207 annotated 80-100% visible
+
+--- by ego distance ---
+                          N_full    N_eval  removed  inflation  cam-visible
+0-20m                     54,626    52,418    2,208    x1.0421          482
+20-30m                    38,242    34,420    3,822    x1.1110          856
+30-40m                    26,385    22,745    3,640    x1.1600          373
+40-50m                    15,312    12,288    3,024    x1.2461          496
+
+--- by detection class ---
+                          N_full    N_eval  removed  inflation  cam-visible
+traffic_cone              12,491    10,570    1,921    x1.1817          973
+bicycle                    2,060     1,834      226    x1.1232           43
+car                       59,522    53,043    6,479    x1.1221          795
+pedestrian                25,678    23,500    2,178    x1.0927          135
+motorcycle                 2,009     1,855      154    x1.0830           32
+barrier                   16,911    15,903    1,008    x1.0634          191
+construction_vehicle       1,599     1,513       86    x1.0568            3
+truck                      9,764     9,260      504    x1.0544           31
+trailer                    2,446     2,331      115    x1.0493            2
+bus                        2,085     2,062       23    x1.0112            2
+
+----------------------------------------------------------------------------------
+HOW TO READ THIS, AND HOW NOT TO.
+
+The inflation factor is an UPPER BOUND. It is what a lidar-only detector's
+recall must be multiplied by to express it over the complete annotated
+in-range set, IF zero keyframe lidar returns implies non-detection. Multi-sweep
+accumulation means some of those objects may still be detectable, so the true
+correction lies between 1.0 and the figure shown.
+
+What does NOT depend on that assumption: the removal criterion is defined on
+range-sensor returns alone. It is correlated with lidar failure by construction
+and uncorrelated with camera failure. Whatever the exact magnitude, the
+direction of the bias is fixed, and it is largest at long range -- which is
+where the camera-versus-lidar argument actually lives.
+
+This is not a claim that any published number is wrong. It is a claim that
+camera and lidar are not being scored on the same set of objects.
+----------------------------------------------------------------------------------

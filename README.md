@@ -15,6 +15,7 @@ authority.
 |---|---|
 | Lifecycle status | `proposed` |
 | Result A | **measured** — all ten audits passed on a checksum-verified copy |
+| Result B | **measured** — analytic, derived from the same audited object set |
 | Reiyah Gate B | not authorized; not required for the work in this repository |
 | Operator acceptance | none |
 | Claims created | none |
@@ -89,6 +90,53 @@ fully camera-visible, and excluded.
 cannot is the single most informative case for estimating whether two sensing channels fail
 together. The filter removes that cell by construction, so any dependence estimate computed
 through the official pipeline is biased toward independence.
+
+## Result B (measured): camera and lidar are not scored on the same objects
+
+Result A says 9.43% of the ground truth is removed. The obvious next question is how much that
+moves anything. It can be answered without running a detector.
+
+The removal criterion is `num_lidar_pts + num_radar_pts == 0`. It is defined on range-sensor
+returns and nothing else. So it is correlated with lidar failure **by construction**, and
+uncorrelated with camera failure. The benchmark deletes objects the range sensors could not see,
+regardless of what the cameras saw. 2,207 of the deleted objects are annotated 80-100%
+camera-visible.
+
+Expressing a lidar-only detector's recall over the complete in-range annotated set instead of the
+filtered one gives an inflation factor of `N_full / N_eval`:
+
+| Stratum | N_full | N_eval | Removed | Inflation | Camera-visible |
+|---|---|---|---|---|---|
+| **All** | 134,565 | 121,871 | 12,694 | **x1.1042** | 2,207 |
+| 0-20 m | 54,626 | 52,418 | 2,208 | x1.0421 | 482 |
+| 20-30 m | 38,242 | 34,420 | 3,822 | x1.1110 | 856 |
+| 30-40 m | 26,385 | 22,745 | 3,640 | x1.1600 | 373 |
+| **40-50 m** | 15,312 | 12,288 | 3,024 | **x1.2461** | 496 |
+
+By class, worst first: traffic cone x1.1817, bicycle x1.1232, car x1.1221, pedestrian x1.0927.
+Least affected: bus x1.0112.
+
+The gradient is the finding. Near the vehicle the effect is 4%. At 40-50 metres it is 25% — and
+long range is exactly where the camera-versus-lidar argument lives.
+
+### The assumption, and its limit
+
+`num_lidar_pts` counts returns inside the box in the **keyframe sweep only**. Most production
+lidar detectors accumulate around ten sweeps, so an object with zero keyframe points may still
+carry evidence in the accumulated stack. More so if it moved into view; less so if it is
+statically occluded, since adjacent sweeps then share nearly the same geometry.
+
+So "undetectable" is too strong, and the inflation factor is an **upper bound**: it is the
+correction if zero keyframe returns implies non-detection. The true correction lies between 1.0
+and the figure shown. Closing that gap requires running a detector, which this repository has not
+yet done.
+
+What does not depend on the assumption is the direction. The removal criterion is a range-sensor
+criterion. Whatever its exact magnitude, the bias runs one way, and it grows with distance.
+
+This is not a claim that any published number is wrong. It is a claim that camera-only and
+lidar-only methods are not being scored against the same set of objects, and that the difference
+is largest where it matters most.
 
 ## Provenance
 
