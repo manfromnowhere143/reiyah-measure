@@ -4,15 +4,18 @@ pairwise lift between published nuScenes detectors, val split, score >= 0.3
 ==========================================================================================
 
 pair                        modalities            marginal c   cond. c  cond. MH OR
+centerpoint x megvii        lidar/lidar                2.698     1.725       31.988   SAME modality
+centerpoint x pointpillars  lidar/lidar                1.966     1.386       15.863   SAME modality
+centerpoint x mapillary     lidar/camera               1.827     1.219        4.325   cross-modality
 megvii x pointpillars       lidar/lidar                1.712     1.313        7.010   SAME modality
 mapillary x megvii          camera/lidar               1.587     1.156        2.810   cross-modality
 mapillary x pointpillars    camera/lidar               1.393     1.101        2.193   cross-modality
 
 ------------------------------------------------------------------------------------------
-same-modality  mean marginal c = 1.712   conditional c = 1.313
-cross-modality mean marginal c = 1.490   conditional c = 1.129
+same-modality  mean marginal c = 2.126   conditional c = 1.474
+cross-modality mean marginal c = 1.602   conditional c = 1.159
 
-modality diversity reduces the marginal lift by 31% of its excess over independence
+modality diversity reduces the marginal lift by 46% of its excess over independence
 
 Accuracy control: PointPillars 29.5 mAP against Mapillary 29.8 mAP is a
 cross-modality pair at matched accuracy. Comparing it to Megvii 51.9 x

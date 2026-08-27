@@ -78,8 +78,9 @@ def lift(a, b, thr, stratify):
             mh_n / mh_d if mh_d else float("nan"))
 
 
-MODALITY = {"mapillary": "camera", "megvii": "lidar", "pointpillars": "lidar"}
-MAP = {"mapillary": 29.8, "megvii": 51.9, "pointpillars": 29.5}
+MODALITY = {"mapillary": "camera", "megvii": "lidar", "pointpillars": "lidar",
+            "centerpoint": "lidar"}
+MAP = {"mapillary": 29.8, "megvii": 51.9, "pointpillars": 29.5, "centerpoint": 61.6}
 
 print("=" * 90)
 print("RESULT H — does modality diversity buy failure independence?")

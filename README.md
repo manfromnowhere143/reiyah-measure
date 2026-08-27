@@ -27,7 +27,7 @@ authority.**
 | Result E | **measured** — 73% of D is shared difficulty; conditional c = 1.16 |
 | Result F | **measured** — B's bound closed: lidar recovers 18.13% of removed objects |
 | Result G | **derived** — the real cost is **+26% evidence**; N scales as sqrt(c) |
-| Result H | **measured** — modality diversity cuts joint-failure odds by **60%** |
+| Result H | **measured** — 3v3 pairs, complete separation; better models fail together *more* |
 | Corrections | **six claims withdrawn or corrected**, all left standing with refutations |
 | Reiyah Gate B | not authorized; not required for anything here |
 | Operator acceptance | none |
@@ -211,24 +211,53 @@ discarded. The 2,207 annotated at 80-100% visibility remain the cleanest subset 
 ## Result H — what modality diversity actually buys (measured)
 
 Every multi-sensor safety argument rests on the premise that a second modality fails differently
-from the first. It is measurable, with three published detectors on one split.
+from the first. It is measurable. Four published detectors on one split give six pairs: three
+same-modality, three cross-modality, three distinct lidar architectures.
 
-The design holds Megvii fixed and varies only the partner's modality, at nearly identical partner
-accuracy — which separates a modality effect from an accuracy effect.
-
-| Pair | Modalities | marginal c | conditional c | **MH odds ratio** |
+| Pair | Modalities | marginal c | conditional c | **cond. MH OR** |
 |---|---|---|---|---|
-| Megvii × PointPillars | **lidar / lidar** | 1.712 | 1.313 | **7.010** |
-| Megvii × Mapillary | camera / lidar | 1.587 | 1.156 | **2.810** |
-| PointPillars × Mapillary | camera / lidar | 1.393 | 1.101 | 2.193 |
+| CenterPoint × Megvii | **lidar / lidar** | 2.698 | 1.725 | **31.99** |
+| CenterPoint × PointPillars | **lidar / lidar** | 1.966 | 1.386 | **15.86** |
+| Megvii × PointPillars | **lidar / lidar** | 1.712 | 1.313 | **7.01** |
+| CenterPoint × Mapillary | camera / lidar | 1.827 | 1.219 | 4.33 |
+| Megvii × Mapillary | camera / lidar | 1.587 | 1.156 | 2.81 |
+| PointPillars × Mapillary | camera / lidar | 1.393 | 1.101 | 2.19 |
 
-**Swapping a same-modality partner for a cross-modality one at matched accuracy cuts the
-conditional joint-failure odds ratio by 60%**, from 7.010 to 2.810.
+**The separation is complete.** Every same-modality pair sits above every cross-modality pair on
+both estimators, with no overlap: the weakest same-modality odds ratio (7.01) exceeds the strongest
+cross-modality one (4.33) by 62%. Three different lidar architectures — voxel CBGS, pillar, and
+CenterPoint's centre-based head — agree, so this is a modality effect rather than an architecture
+artifact.
 
-Two things follow, and they point in opposite directions. Modality diversity buys a great deal of
-independence, which is a quantitative vindication of multi-modal design. And it does not buy all of
-it: cross-modality conditional c stays at 1.10 to 1.16 with odds ratios near 2.2 to 2.8, so the
-independence assumption still fails after diversification.
+Cross-modality pairing removes **46% of the marginal excess over independence**, and roughly two
+thirds of the conditional excess.
+
+### The part that should worry a safety engineer
+
+Read the lidar pairs in order: **7.01, then 15.86, then 31.99** — rising monotonically with the
+accuracy of *both* models. The two strongest lidar detectors fail together the most.
+
+The mechanism is not mysterious. As a channel improves, its remaining failures concentrate on the
+irreducible set — the objects no lidar model can find. Two strong models of the same modality end
+up failing on nearly the same objects, so their dependence rises even as their individual error
+rates fall.
+
+**Improving both channels does not improve their independence. It worsens it.** A redundancy
+argument that was sound for a pair of mediocre sensors gets weaker, not stronger, as each sensor is
+upgraded — and nothing in the usual per-channel accuracy reporting would show you that happening.
+
+### The weakness in this result
+
+**There is only one camera model.** All three cross-modality pairs share Mapillary MonoDIS, a
+2019-era monocular detector at 29.8 mAP. If it is unusual in some way, the entire cross-modality
+column moves with it. The lidar side has three independent architectures; the camera side has one,
+and that asymmetry is the first thing a reviewer should attack.
+
+CenterPoint's file also carries weaker provenance than the other three. It comes from a third-party
+Drive mirror rather than nuScenes, its exact variant is unconfirmed, and our matcher reconstructs
+**61.59 mAP** for it — plausible for CenterPoint but **not validated against a confirmed published
+figure** the way the other three are. Treat that row as indicative rather than as measured to the
+same standard.
 
 ## Method
 
@@ -243,6 +272,11 @@ devkit discards on return.
 | Megvii CBGS | lidar | 51.97 | 51.90 | 0.07 |
 | Mapillary MonoDIS | camera | 29.58 | 29.80 | 0.22 |
 | PointPillars | lidar | 29.54 | 29.50 | 0.04 |
+| CenterPoint | lidar | 61.59 | *unconfirmed variant* | **not validated** |
+
+The first three are the nuScenes-hosted baselines with published figures. CenterPoint comes from a
+third-party mirror without a confirmed published number for that exact file, so it is reported and
+used but explicitly not held to the same standard.
 
 That validation caught two real bugs. The devkit interpolates precision with linear `np.interp`,
 not a step lookup. And `filter_eval_boxes` distance-filters the **predictions** as well as the
