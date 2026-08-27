@@ -51,9 +51,11 @@ That claim would have been demolished on contact.
 **What survives, and is stronger:**
 
 1. **The censored denominator.** `loaders.py:231` deletes every ground-truth object with zero
-   lidar and zero radar returns before scoring. Computed at 9.43% of the evaluated validation
-   set. This is a correction to published work, including plausibly Qiu's own estimate, since a
-   dependence estimate computed through that pipeline is biased toward independence.
+   lidar and zero radar returns before scoring. Measured at 9.43% of the evaluated validation set.
+   **Two claims once attached to this were later falsified and must not be revived:** Qiu's
+   estimate does not run through that pipeline (Result C), and the censoring inflates the measured
+   dependence by about 3% rather than deflating it (Result D). The finding is the denominator
+   itself, not a correction to anyone.
 2. **The missing bridge.** Of 875 papers citing RSS, zero mention Definition 32, Corollary 3, or
    c-approximate independence. Qiu's thesis contains zero occurrences of "Shalev". The field's
    own authoritative survey (Hoss et al.) contains zero occurrences of "correlat", "common cause"
